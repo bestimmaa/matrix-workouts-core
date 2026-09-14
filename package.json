@@ -1,6 +1,6 @@
 {
   "name": "matrix-workouts-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Parser, API client and export format for Matrix / Johnson Fitness workout records",
   "license": "MIT",
   "author": "Christoph Halang",
