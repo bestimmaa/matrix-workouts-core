@@ -4,10 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
-## [Unreleased]
-
-Rename this heading to `## [0.2.0]` before `npm run release` — the release script
-checks for a heading matching the version it just bumped to and refuses without one.
+## [0.2.0] - 2026-09-14
 
 ### Added
 
