@@ -1,0 +1,68 @@
+{
+  "name": "matrix-workouts-core",
+  "version": "0.1.0",
+  "description": "Parser, API client and export format for Matrix / Johnson Fitness workout records",
+  "license": "MIT",
+  "author": "Christoph Halang",
+  "type": "module",
+  "keywords": [
+    "matrix-fitness",
+    "johnson-fitness",
+    "jfit",
+    "workout",
+    "cycling",
+    "power",
+    "cadence",
+    "heart-rate",
+    "telemetry"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.js"
+    }
+  },
+  "bin": {
+    "matrix-workouts-history": "dist/node/bin/history.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "MATRIX_API.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bestimmaa/matrix-workouts-core.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bestimmaa/matrix-workouts-core/issues"
+  },
+  "homepage": "https://github.com/bestimmaa/matrix-workouts-core#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/node/bin/history.js",
+    "prepare": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "history": "vite-node src/node/bin/history.ts --",
+    "release": "node scripts/release.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "typescript": "^5.7.2",
+    "vite-node": "^2.1.8",
+    "vitest": "^2.1.8"
+  }
+}
