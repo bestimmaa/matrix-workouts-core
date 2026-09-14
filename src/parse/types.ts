@@ -15,7 +15,11 @@ export type MachineType = KnownMachineType | (string & {});
 
 /** One sample, emitted every 10 seconds by the console. */
 export interface RawInterval {
-  /** Seconds covered by this sample: 10 for every sample except the last, which is 0. */
+  /**
+   * Seconds covered by this sample: 10 for every sample but the last, which is a
+   * partial. That partial is NOT reliably 0 — 0, 1, 2, 3, 5, 6, 7, 8, 10 and 11 have
+   * all been observed. Never derive elapsed time as `index * 10`; accumulate this.
+   */
   duration: number;
   /** Distance covered during this sample, meters. Quantized to 0.01 mile. */
   distance: number;
