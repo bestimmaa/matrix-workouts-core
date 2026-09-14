@@ -438,10 +438,21 @@ resistance as the driver of output is wrong there. Read the series, not the habi
   sample's own `duration`, which is what `toWorkout` does.
 - **Resistance range is machine- and program-dependent: 1–30 observed.** Do not
   hard-code an axis maximum; take it from the data.
-- Per-sample `distance` is quantized to multiples of **16.09 m = 0.01 mile** — the
-  console records imperial and the API converts. This is why summed samples drift
-  from the reported total.
-- Cumulative distance may end slightly below the record's `distance` total.
+- **Per-sample `distance` is quantized to multiples of 16.09 m = 0.01 mile** — the
+  console records imperial and the API converts. **Never rebuild a distance series by
+  summing it.** The error accumulates in one direction: across all 11 fixtures the
+  per-sample deltas fall short of the record's `distance` total on *every* ride, by
+  15.5–80.5 m (0.05 % on a long one, 5.3 % on a 1.2 km one). Take deltas of
+  `averageDistance` instead — it is the console's own running total, and it matches
+  the reported figure exactly on 7 of the 11. This is not a display nicety: any
+  consumer that hands a cumulative series to something which derives a total from it
+  inherits the whole error. HealthKit is the first such consumer — `HKWorkoutBuilder`
+  computes a workout's total distance from the samples it is given — so the naive
+  version silently under-reports every ride.
+- **Cumulative distance does not always reach the record's `distance` total either.**
+  Short by 16.09 m on two fixtures, and by 160.94 m and 225.31 m (≈3 %) on two more.
+  Neither figure reconciles perfectly. Carry the residual and say which number you are
+  showing; do not scale the series to close the gap.
 
 ---
 
