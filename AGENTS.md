@@ -74,6 +74,8 @@ src/
     parse/       localStorage blob or API record -> typed Workout model
     api/         jfit HTTP client, over an injected fetch
     export/      the JSON a user takes elsewhere (Workout -> document)
+  charts — no platform underneath it either, and no renderer
+    charts/      chart geometry (data + scale -> path strings, ticks)
   node — where the platform-free promise is cashed in
     node/        real fetch, real files, .env, and the history CLI
 ```
@@ -97,10 +99,25 @@ both are load-bearing:
   importing the root entry must not be able to reach `node:fs` transitively. The
   layering test enforces the direction; the `exports` map enforces the reachability.
 
-**A consumer that is not JavaScript does not want a package anyway.** A phone app
-writing rides into HealthKit cannot import any of this. What it consumes is the export
-document, so *that* is the interface it depends on, and it is pinned in
+**The phone app was predicted here as a non-consumer, and that prediction was wrong.**
+This section used to argue that an app writing rides into HealthKit could not import
+any of this and would depend only on the export document. What actually happened, in
+Sep 2026, is that the app was written in React Native — chosen *because* this package
+runs in Hermes verbatim: zero runtime dependencies, no DOM, no `node:`, and no `fetch`
+of its own, since networking arrives as an injected `FetchLike` that React Native's
+global `fetch` satisfies unchanged.
+
+So the properties this layering was defended for turned out to be worth more than
+expected, and the rule they imply is unchanged but now has a third consumer leaning on
+it: **keep the root entry free of every platform, because you cannot predict which one
+the next consumer is standing on.** The export document is still the interface for a
+genuinely non-JavaScript reader, and it is still pinned in
 `src/export/contract.test.ts` — see "The export format".
+
+`charts/` arrived the same way and for the same reason: it was the extension's, it
+never named a platform, and when a second renderer wanted the same panels the honest
+move was to promote it rather than fork it. A path `d` string is a `d` string whether
+a browser or `react-native-svg` draws it.
 
 ---
 

@@ -84,6 +84,21 @@ const LAYERS: Layer[] = [
   },
   {
     /*
+     * Geometry, not pixels: data + scale -> path strings and tick positions. It lives
+     * here rather than in a consumer because two of them now draw the same charts —
+     * the extension in the DOM, the iOS app through `react-native-svg` — and a `d`
+     * string is a `d` string in both. Nothing here may name a platform, which is what
+     * lets one renderer-agnostic layout be tested against every fixture with no
+     * renderer at all.
+     */
+    name: "charts",
+    dirs: ["charts"],
+    mayUse: [],
+    mayImport: ["core", "charts"],
+    mayTakeDependencies: false,
+  },
+  {
+    /*
      * The one place the platform-free promise is cashed in: real `fetch`, real files,
      * `.env`. Consumers that want it ask for it by name — `matrix-workouts-core/node`
      * — so a browser bundle importing the root entry can never pull `node:fs` in

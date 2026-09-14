@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+Rename this heading to `## [0.2.0]` before `npm run release` — the release script
+checks for a heading matching the version it just bumped to and refuses without one.
+
+### Added
+
+- **`charts/` — chart geometry, promoted out of the Chrome extension.** `linePath`,
+  `stepPath`, `areaPath`, `linearScale`, `niceDomain`, `ticks`, `tickStep`,
+  `nearestIndex`, `buildPanel`, `elapsedScale`, `planWorkout`, `LAYOUT` and the
+  `PanelSpec` / `PanelGeometry` / `LinearScale` / `Vertex` types.
+
+  It emits geometry, not pixels: path `d` strings, tick positions and scales, with no
+  renderer underneath it. That is why it could move at all, and why the layering test
+  gives it `mayUse: []` like `parse/`, `api/` and `export/`.
+
+  The reason it moved is a second renderer. The extension draws these panels in the
+  DOM; the iOS app draws the same ones through `react-native-svg`, and a path `d`
+  string is a `d` string in both. Two copies of the layout would have been the first
+  place the two drifted.
+
+### Changed
+
+- `RawInterval.duration`'s doc comment said the final sample is `0`. It is a partial,
+  and 0, 1, 2, 3, 5, 6, 7, 8, 10 and 11 have all been observed. Comment only.
+- AGENTS.md now states the rule the distance quantization implies — rebuild a
+  cumulative series from `averageDistance`, never by summing per-sample `distance`,
+  which falls short on every fixture — and retracts its claim that a phone app could
+  not consume this package.
+
+---
+
 ## [0.1.0] - 2026-09-14
 
 First public release. Node 20+, ESM only, **zero runtime dependencies**.
