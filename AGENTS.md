@@ -475,6 +475,13 @@ it.
 }
 ```
 
+**The identifier keeps the old repository's name, on purpose.** `full-matrix-workouts`
+became `matrix-workouts-chrome` when this package was extracted, and the format string
+did not follow it. Every export already written carries this value and every decoder
+compares against it, so renaming it for tidiness would orphan files that exist. It is
+an opaque identifier; being accurate about where the code lives is not its job.
+`src/export/contract.test.ts` pins it, and that test is the one that fails on a rename.
+
 Four decisions in it, none of them arbitrary:
 
 - **`source.record` carries every field of the upstream record, unaltered**, which is

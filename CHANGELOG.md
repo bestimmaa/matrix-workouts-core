@@ -6,19 +6,65 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
 
 ## [0.1.0] - 2026-09-14
 
+First public release. Node 20+, ESM only, **zero runtime dependencies**.
+
 ### Added
 
-- First release. Extracted from the `full-matrix-workouts` Chrome extension, where
-  this code had always been platform-free by design and enforced as such by a test —
-  publishing it changes nothing about the code and everything about who can use it.
-- `matrix-workouts-core`: the parser (`toWorkout`, `loadCachedWorkouts`,
-  `findWorkout`), heart-rate dropout filtering (`heartRateStats`,
-  `flagHeartRateDropouts`), program-mode and control-signature identification, the
-  jfit API client (`fetchWorkoutHistory`, `loginWithXid`, `readCredentials`) and the
-  lossless export document (`workoutExport`).
-- `matrix-workouts-core/node`: `httpFetch`, `downloadHistory`, `readRawHistoryFile`
-  and `loadEnvFile` — the one place real `fetch` and real files are used.
-- `matrix-workouts-history`, the standalone CLI that signs in with an xid and passcode
-  and downloads the full history.
-- `parseHistoryResponse`, split out of `fetchWorkoutHistory` so a response read back
-  from a cache file goes through the same tolerance as one read off the wire.
+- **`matrix-workouts-core`** — the platform-free entry point. Nothing reachable from
+  it touches a DOM, a `chrome.*`, a `node:` module or `fetch`, which is what lets one
+  parser serve a browser extension, a CLI and an MCP server without a fork. A test
+  asserts it per identifier; `tsconfig` omits the DOM lib so the compiler agrees.
+  - `toWorkout` normalizes either upstream shape — camelCase from the site's
+    `localStorage`, snake_case from the API — into a `Workout` whose field names carry
+    units. `loadCachedWorkouts` reads the browser's persisted blob through an injected
+    `ReadableStorage`.
+  - `findWorkout` accepts **either** id a record has. Rides recorded before
+    13 Aug 2026 carry a record id that differs from the id their own URL uses, so a
+    lookup that knows only one of them fails on half a history.
+  - `heartRateStats` and `flagHeartRateDropouts` filter chest-strap dropouts. The mask
+    is *validity*: `true` means the reading is real.
+  - `programMode` names the console program behind a numeric `programType`;
+    `controlSignature` derives what the console was actually holding constant from the
+    series, which is the more trustworthy of the two.
+  - `fetchWorkoutHistory` over an injected `FetchLike` — the client never calls
+    `fetch` itself. `loginWithXid` exchanges an xid and passcode for credentials and
+    returns nothing else; `readCredentials` borrows a session the browser already has.
+  - `workoutExport` builds the export document, carrying the upstream record verbatim
+    alongside the normalized telemetry so the file is never a worse record of the ride
+    than the browser already had.
+- **`matrix-workouts-core/node`** — the one place real `fetch` and real files are
+  used, behind its own entry point so a browser bundle cannot reach `node:fs` through
+  the root import. `httpFetch`, `downloadHistory`, `readRawHistoryFile`, `loadEnvFile`.
+  Downloads are written `0600`; they are one person's heart rate.
+- **`matrix-workouts-history`** — a CLI that signs in and downloads an entire history,
+  optionally one export document per ride. The only thing here that handles a passcode.
+- `parseHistoryResponse`, so a response read back from a cache file gets the same
+  tolerance as one read off the wire: the same accepted shapes, the same per-record
+  failure isolation, the same truncation check.
+
+### Notes
+
+- **Scope is the indoor bike**, upright and recumbent, which is what the fixtures
+  cover and what this is verified against. Treadmill and rower records parse, but
+  nothing here is tuned for them and no fixture backs them.
+- **Both heart-rate averages are preserved**, never reconciled. The platform's summary
+  is not derived from the sample series and does not always agree with it; on a ride
+  with independent Apple Watch ground truth the console's 153 bpm was exactly right
+  while the filtered series gave 151. On a glitching strap *theirs* is the better
+  number, so both are carried and a consumer decides.
+- **Paging is deliberately not followed.** The workouts endpoint has returned every
+  record in one response on every account seen; inventing page parameters against an
+  undocumented API is a good way to silently truncate someone's history. A
+  `paging.total` larger than what arrived surfaces as `truncated` instead.
+- **The export format identifier stays `full-matrix-workouts/workout`.** It names the
+  repository this code came from, which no longer exists under that name — and it is
+  not going to be renamed. It is an opaque identifier in files already written to
+  people's disks, and changing it would orphan every one of them for the sake of
+  tidiness. `src/export/contract.test.ts` pins it.
+
+### Provenance
+
+Extracted from the `full-matrix-workouts` Chrome extension, now
+[matrix-workouts-chrome](https://github.com/bestimmaa/matrix-workouts-chrome), which
+consumes this package instead of its own copy. The extension's rendering is unchanged
+across the move: every fixture's preview output is byte-identical.

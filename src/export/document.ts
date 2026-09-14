@@ -25,6 +25,16 @@ import type { Sample, Workout } from "../parse/types.js";
  *    with the series — which they do, see AGENTS.md — both are carried, labelled,
  *    rather than one being picked on the reader's behalf.
  */
+/**
+ * The format identifier, and it does not change.
+ *
+ * It names `full-matrix-workouts`, the repository this code was extracted from in
+ * Sep 2026 and which is now `matrix-workouts-chrome`. That looks like an oversight and
+ * is not one: this string is already in files on people's disks, and every decoder
+ * that reads them compares against it. Renaming it to match the new repository would
+ * orphan all of them and buy nothing — an identifier's job is to be stable, not
+ * accurate about where the code lives today. `contract.test.ts` pins it.
+ */
 export const EXPORT_FORMAT = "full-matrix-workouts/workout";
 
 /** Bump only for a breaking change; new optional fields do not need one. */
