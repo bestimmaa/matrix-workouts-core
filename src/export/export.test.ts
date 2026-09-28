@@ -39,6 +39,7 @@ const ALL = [
   "6aa2d8a88d2b6d09c62953f0",
   API_SHAPED,
   VIRTUAL_ACTIVE,
+  "6ab15f0afd6f5afe80369797", // 21 Sep ramp test, snake_case from the API
 ];
 
 const AT = new Date("2026-09-11T09:30:00.000Z");

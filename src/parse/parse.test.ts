@@ -40,6 +40,9 @@ const RECUMBENT = "6a6368cb18e8655524dbb05d"; // 24 Jul, the only recumbent ride
 // 03 Sep, program 20. Captured from the API, so it is snake_case rather than the
 // camelCase of the cached blob, and it is not in persist-root.json.
 const API_SHAPED = "6a998daf8d2b6d09c6e334d2";
+// 21 Sep, program 38, which the console calls Fitness Test (Ramp Test). Captured
+// from the API like API_SHAPED, so snake_case and not in persist-root.json.
+const RAMP_TEST = "6ab15f0afd6f5afe80369797";
 // The same 12 Aug ride as PROGRAM_20, and the id the site's own link for it carries.
 // Read live from the API on 12 Sep 2026: `workout_id` and `id` are DIFFERENT values
 // on every ride that account recorded before 13 Aug 2026 — 25 of its 45 — and it is
@@ -316,6 +319,29 @@ it("names the modes confirmed against the rider's training log", () => {
     const power = p38.samples.map((s) => s.powerWatts);
     expect(Math.min(...power)).toBe(35);
     expect(Math.max(...power)).toBe(280);
+  });
+
+  /**
+   * Both program-38 rides run the same protocol — 35 W, then +35 W every two
+   * minutes, resistance never moving — and differ only in where the rider stopped.
+   * The one sample straddling each step reads 3 W short (67, 102, ...), because
+   * the console averages across the step; it is not a stage of its own.
+   */
+  it("reads the ramp test as a 35 W staircase in two-minute stages", () => {
+    const ramp = toWorkout(JSON.parse(fixture(`raw-${RAMP_TEST}.json`)) as Record<string, unknown>);
+    expect(ramp.mode).toBe("fitness_test");
+    expect(controlSignature(ramp.samples).mode).toBe("power_controlled");
+    expect(new Set(ramp.samples.map((s) => s.resistanceLevel))).toEqual(new Set([1]));
+
+    const stages = [35, 70, 105, 140, 175, 210, 245, 280, 315];
+    stages.forEach((watts, i) => {
+      // Stage i opens at sample 12i and, bar the straddling first sample, holds.
+      const stage = ramp.samples.slice(i * 12 + (i ? 1 : 0), (i + 1) * 12);
+      expect(stage.length).toBeGreaterThan(0);
+      for (const s of stage) expect(s.powerWatts).toBe(watts);
+    });
+    expect(ramp.samples).toHaveLength(106);
+    expect(heartRateStats(ramp.samples).dropoutCount).toBe(0);
   });
 
   it("copes with a 19-sample ride", () => {

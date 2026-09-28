@@ -309,7 +309,7 @@ Observed across one account's 44 workouts:
 | 18 | 7 | **Sprint 8** (HIIT) — *confirmed* | `sprintScores`, `totalSweatScore`, `sprint8ProgramLevel` |
 | 20 | 4 | **Target watts** (constant power) — *confirmed* | — |
 | 47 | 3 | **Virtual Active** (scenic route) — *confirmed* | — |
-| 38 | 1 | **Fitness test** (console VO₂ / Cooper) — *confirmed* | — |
+| 38 | 1 | **Fitness test** — the console's "Fitness Test (Ramp Test)" — *confirmed* | — |
 | 0 | 2 | *unidentified* | — |
 
 ### How the mapping was established
@@ -328,6 +328,16 @@ Matching a ride's date and duration against that log identifies its mode directl
   indoor bike" row exactly: 2026-07-20, 902 s, 7419 m, 147.6 W against a logged 149 W.
   The console reported a VO₂ estimate and "final stage completed: 7" — which is why
   the series shows eight power stages at a fixed resistance.
+
+  The console names it **"Fitness Test (Ramp Test)"** — reported by the rider for the
+  2026-09-21 ride, `6ab15f0afd6f5afe80369797`: 1057 s, 9.14 km, 172 W mean. Both
+  rides run the same protocol, sample for sample: 35 W, then +35 W every two minutes
+  (12 samples), resistance never leaving level 1. They differ only in where the rider
+  stopped — 40 s into the 280 W stage in July, 90 s into the 315 W stage in
+  September. Each step lands mid-sample, so one sample per step reads 3 W short
+  (67, 102, …); that is the console averaging across the step, not a stage. An
+  11-second program-38 ride the same afternoon (`6ab15ab1…`, 2 samples) is a false
+  start and parses as one.
 - **46 = target heart rate**, corroborated by entries naming the mode outright
   ("Relaxed Zone 2 ride in Target HR mode", "Target HR was 139").
 - **47 = Virtual Active**, the console's scenic-route mode: the video's terrain
@@ -641,6 +651,7 @@ Use it when changing anything about heart-rate filtering.
 | `6a6368cb…` | 46 | 376 | **recumbent** — the only non-upright ride; strap dead for 215 samples; final sample `duration: 8` |
 | `6a5e4fe4…` | 38 | 89 | resistance pinned at 1 while power ramps — breaks the "power follows resistance" assumption |
 | `6a998daf…` | 20 target watts | 362 | **snake_case, captured from the API**; strap glitching badly, and the only ride with independent ground truth |
+| `6ab15f0a…` | **38 Ramp Test** | 106 | the complete ramp: all nine stages 35→315 W, strap clean, snake_case from the API. Pins the staircase the July ride only shows eight of |
 
 Between them these cover every `programType` in the account (0, 18, 20, 38, 46, 47),
 both bike types, and both sides of the upstream shape change.
@@ -653,6 +664,13 @@ shape that time, so `JSON.stringify`-ing it to pull the record out would have
 silently normalized any whole-number float. Extract from the `localStorage` string
 itself. This record happens to carry no `.0` values — checked, not assumed — so the
 pretty-printed fixture round-trips back to those exact bytes.
+
+**`6ab15f0a…` came out of the MCP server's cache** (`raw-history.json`), which is
+the API response re-serialized by `downloadHistory` — so the same `.0` caveat as an
+export applies. Its only whole-number value in a float field is the first sample's
+`distance: 0`, which `6a998daf…` also carries straight from the API, so nothing was
+lost. Like `6a998daf…` it is not in `persist-root.json`; the ride was two weeks old
+and outside the cached week when it was captured.
 
 **`6aa2d8a8…` was captured through the extension's own export**, which is what that
 feature was for — but note the capture route matters and the file records which one
