@@ -392,6 +392,14 @@ nothing alike: one nudges constantly, the other holds a level for eight minutes.
 moved this much on one more ride was never going to hold a threshold. This is the
 second independent reason not to derive the mode from telemetry.
 
+**`targetWattBlocks` is not this heuristic, and must not become it.** It finds the
+blocks *inside* a ride already known to be program 20 — a plateau there is, by
+definition, the wattage the console was told to hold — and it returns nothing for any
+other mode. Run on every fixture without that gate, it finds "blocks" on target
+heart rate and Virtual Active rides that mean nothing. The rules were validated on 24
+Oct 2026 against all four program-20 fixtures and their training-log rows; the
+numbers are in `src/parse/blocks.ts`, and `npm test` pins every one.
+
 To close 0: ride it once and read the mode off the console, then add a row to the
 training log so the ride can be matched.
 
