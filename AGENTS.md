@@ -651,6 +651,8 @@ Use it when changing anything about heart-rate filtering.
 | `6a6368cb…` | 46 | 376 | **recumbent** — the only non-upright ride; strap dead for 215 samples; final sample `duration: 8` |
 | `6a5e4fe4…` | 38 | 89 | resistance pinned at 1 while power ramps — breaks the "power follows resistance" assumption |
 | `6a998daf…` | 20 target watts | 362 | **snake_case, captured from the API**; strap glitching badly, and the only ride with independent ground truth |
+| `6a8586f5…` | 20 target watts | 285 | **4 × 4 min at 200 W** — the short-block case for `targetWattBlocks`, behind an 8-minute 100 W lead-in that must not count; strap returned about half its samples. Snake_case, from the MCP cache |
+| `6adca6d1…` | 20 target watts | 253 | **one steady 40-minute block** after the console's 2-minute warm-up — the single-block case. Strap clean. Snake_case, from the MCP cache |
 | `6ab15f0a…` | **38 Ramp Test** | 106 | the complete ramp: all nine stages 35→315 W, strap clean, snake_case from the API. Pins the staircase the July ride only shows eight of |
 
 Between them these cover every `programType` in the account (0, 18, 20, 38, 46, 47),
@@ -671,6 +673,10 @@ export applies. Its only whole-number value in a float field is the first sample
 `distance: 0`, which `6a998daf…` also carries straight from the API, so nothing was
 lost. Like `6a998daf…` it is not in `persist-root.json`; the ride was two weeks old
 and outside the cached week when it was captured.
+
+**`6a8586f5…` and `6adca6d1…` came out of the MCP cache too**, on 24 Oct 2026, so the
+same caveat holds: whole-number floats such as the first sample's `distance: 0` may
+have lost a `.0`. Neither is in `persist-root.json`.
 
 **`6aa2d8a8…` was captured through the extension's own export**, which is what that
 feature was for — but note the capture route matters and the file records which one

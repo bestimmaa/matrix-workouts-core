@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+### Added
+
+- Two target-watts fixtures from the API: `6a8586f5…` (19 Aug, 4 × 4 min at 200 W, a
+  strap that returned half its samples) and `6adca6d1…` (24 Oct, one steady 40-minute
+  block after the console's warm-up).
+- A fixture for the 21 Sep ramp test, `6ab15f0a…`, the complete nine-stage staircase.
+
 ## [0.2.0] - 2026-09-14
 
 ### Added
