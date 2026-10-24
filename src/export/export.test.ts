@@ -40,6 +40,8 @@ const ALL = [
   API_SHAPED,
   VIRTUAL_ACTIVE,
   "6ab15f0afd6f5afe80369797", // 21 Sep ramp test, snake_case from the API
+  "6a8586f58d2b6d09c6494dd6", // 19 Aug target watts, 4×4 @ 200 W, snake_case from the API
+  "6adca6d1680a5afcc2ab4f3a", // 24 Oct target watts, one steady block, snake_case from the API
 ];
 
 const AT = new Date("2026-09-11T09:30:00.000Z");
