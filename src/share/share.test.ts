@@ -25,7 +25,7 @@ const CASES = [
   ["6a8586f58d2b6d09c6494dd6", "Target watts", "4 × 4 min", "201W"],
   ["6a7cab8cc23a154bebccef65", "Target watts", "2 × 18 min", "148W"],
   ["6aa2d8a88d2b6d09c62953f0", "Sprint 8", "Sweat score", "9360"],
-  ["6aa194a08d2b6d09c61e9500", "Target heart rate", "Average over 52 min", "141bpm"],
+  ["6aa194a08d2b6d09c61e9500", "Target heart rate", "Average over 52 min", "142bpm"],
   ["6ab15f0afd6f5afe80369797", "Fitness test", "Reached in 18 min", "315W"],
   ["6aa67d338d2b6d09c6412d7b", "Virtual Active", "40 min virtual route", "20.4km"],
   ["6a9413328d2b6d09c6b512a9", null, "10 min ride", "132W"],
@@ -87,6 +87,21 @@ describe("shareCard", () => {
     const card = shareCard(fixture("6a8586f58d2b6d09c6494dd6"));
     expect(card.strip).toBeNull();
     expect(card.stats.map((s) => s.label)).not.toContain("avg bpm");
+  });
+
+  it("states the console's reported heart-rate average, not the filtered one", () => {
+    // 3 Sep: the strap glitched badly but enough survived to draw. The console said
+    // 153, the rider's Apple Watch said 153, the filtered series says 151.
+    const stats = shareCard(fixture("6a998daf8d2b6d09c6e334d2")).stats;
+    expect(stats.find((s) => s.label === "avg bpm")?.value).toBe("153");
+  });
+
+  it("centres each block label on its block's columns", () => {
+    const card = shareCard(fixture("6a998daf8d2b6d09c6e334d2"));
+    for (const label of card.gridLabels) {
+      const column = Math.floor(label.at * card.grid.columns.length);
+      expect(card.grid.columns[column]!.tone).toBe("full");
+    }
   });
 
   it("draws a missing heart-rate column as empty, never as zero", () => {
@@ -175,8 +190,9 @@ describe("renderShareCardSvg", () => {
     const card = shareCard(fixture("6adca6d1680a5afcc2ab4f3a"));
     expect(renderShareCardSvg(card, { format: "story" })).not.toContain("<style>");
     const css = "@font-face{font-family:Doto;src:url(data:font/woff2;base64,AAAA)}";
-    expect(renderShareCardSvg(card, { format: "story", fontFaceCss: css })).toContain(`<defs><style>${css}</style></defs>`);
-    expect(renderShareCardSvg(card, { format: "story", fontFaceCss: "</style>" })).toContain("&lt;/style&gt;");
+    expect(renderShareCardSvg(card, { format: "story", fontFaceCss: css })).toContain(`<defs><style><![CDATA[${css}]]></style></defs>`);
+    // A CDATA terminator inside the CSS is split, not passed through.
+    expect(renderShareCardSvg(card, { format: "story", fontFaceCss: "a]]>b" })).toContain("a]]]]><![CDATA[>b");
   });
 
   /*

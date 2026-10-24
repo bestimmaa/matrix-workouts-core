@@ -1,4 +1,5 @@
 import type { Sample, Workout } from "./types.js";
+import { median } from "./stats.js";
 import { SAMPLE_INTERVAL_SECONDS } from "./workout.js";
 
 /**
@@ -97,14 +98,15 @@ function workPlateaus(samples: readonly Sample[]): Run[] {
   const runs: Run[] = [];
   let i = 0;
   while (i < smooth.length) {
+    // Kept sorted as it grows, so its median is an index rather than a sort per sample.
     const run = [smooth[i]!];
     let j = i + 1;
     let misses = 0;
     while (j < smooth.length) {
-      const m = median(run);
+      const m = run[run.length >> 1]!;
       const tolerance = Math.max(RULES.minToleranceWatts, m * RULES.toleranceFraction);
       if (Math.abs(smooth[j]! - m) <= tolerance) {
-        run.push(smooth[j]!);
+        insertSorted(run, smooth[j]!);
         misses = 0;
       } else if (++misses >= RULES.missesToBreak) {
         break;
@@ -136,7 +138,13 @@ function secondsAt(samples: readonly Sample[], index: number): number {
   return last.elapsedSeconds + (previous ? last.elapsedSeconds - previous.elapsedSeconds : SAMPLE_INTERVAL_SECONDS);
 }
 
-function median(values: readonly number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[sorted.length >> 1] ?? 0;
+function insertSorted(sorted: number[], value: number): void {
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (sorted[mid]! <= value) lo = mid + 1;
+    else hi = mid;
+  }
+  sorted.splice(lo, 0, value);
 }
