@@ -8,6 +8,11 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
 
 ### Added
 
+- **`targetWattBlocks(workout)`** — the blocks of a target-watts ride, read from the
+  power series: start, end and median watts for each stretch the console held. The
+  record carries no target and no segments, so this is the only way to say
+  "2 × 20 min at 153 W". It returns nothing unless `workout.mode` is
+  `"target_watts"`: on other programs the same rules find plateaus that mean nothing.
 - Two target-watts fixtures from the API: `6a8586f5…` (19 Aug, 4 × 4 min at 200 W, a
   strap that returned half its samples) and `6adca6d1…` (24 Oct, one steady 40-minute
   block after the console's warm-up).
