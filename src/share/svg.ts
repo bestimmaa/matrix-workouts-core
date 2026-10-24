@@ -49,7 +49,7 @@ export const SHARE_SIZES: Readonly<Record<ShareFormat, { width: number; height: 
  * of a 1920 px story clear at each end; every line of text sits between them. A feed
  * post has no overlay, so it gets the ordinary margin.
  */
-const PADDING: Readonly<Record<ShareFormat, { top: number; bottom: number }>> = {
+const PADDING_PCT: Readonly<Record<ShareFormat, { top: number; bottom: number }>> = {
   story: { top: 25, bottom: 25 },
   feed: { top: 7, bottom: 7 },
 };
@@ -65,15 +65,19 @@ const DOTO_ADVANCE = 0.6;
 const HERO_TRACKING = -0.04;
 /** Gap between cells, as a fraction of a cell. */
 const CELL_GAP = 0.22;
-/** Instrument Sans at weight 400, averaged over the stat labels; only used to space them. */
-const SANS_AVERAGE_ADVANCE = 0.5;
+/**
+ * Instrument Sans at weight 400, per character, with headroom; only used to space the
+ * stats. "avg bpm" measured 0.56 em per character in a 24 Oct 2026 render, and 0.5
+ * pushed it past the right margin.
+ */
+const SANS_AVERAGE_ADVANCE = 0.6;
 const STRIP_ROWS = 4;
-const HERO: Readonly<Record<ShareFormat, number>> = { story: 33, feed: 28 };
-const HERO_FLOOR = 22;
+const HERO_PCT: Readonly<Record<ShareFormat, number>> = { story: 33, feed: 28 };
+const HERO_FLOOR_PCT = 22;
 /**
  * The grid is the card's picture; below this many rows it stops reading as a shape.
  * When the text above and the strip below leave less room, things give way in this
- * order: the big number shrinks (down to `HERO_FLOOR`), then the strip loses a row,
+ * order: the big number shrinks (down to `HERO_FLOOR_PCT`), then the strip loses a row,
  * then the strip goes. The heart-rate strip is the one element a card is allowed to
  * lose silently — the same rule as a dead strap. Measured on the 3 Sep ride, which
  * has block labels *and* a strip and kept three rows before this existed.
@@ -110,7 +114,7 @@ export function renderShareCardSvg(card: ShareCard, options: ShareSvgOptions): s
   const u = width / 100;
   const side = 7 * u;
   const inner = width - 2 * side;
-  const pad = PADDING[options.format];
+  const pad = PADDING_PCT[options.format];
   const out: string[] = [];
   let y = pad.top * u;
 
@@ -142,7 +146,7 @@ export function renderShareCardSvg(card: ShareCard, options: ShareSvgOptions): s
   const labelsHeight = card.gridLabels.length ? 1.5 * u + 8 * u : 0;
   const heroFits = (inner + 1.5 * u) / (card.hero.length * (DOTO_ADVANCE + HERO_TRACKING));
   const plan = fit(
-    { hero: Math.min(HERO[options.format] * u, heroFits), heroFloor: Math.min(heroFits, HERO_FLOOR * u), strip: card.strip !== null },
+    { hero: Math.min(HERO_PCT[options.format] * u, heroFits), heroFloor: Math.min(heroFits, HERO_FLOOR_PCT * u), strip: card.strip !== null },
     ({ hero, stripRows }) => {
       const gridTop = y + 1.5 * u + 0.82 * hero + 5 * u;
       const strip = stripRows > 0 ? 4 * u + 5.4 * u * SANS_LINE + 1.5 * u + stripRows * cell : 0;
@@ -205,7 +209,11 @@ export function renderShareCardSvg(card: ShareCard, options: ShareSvgOptions): s
     x += widths[i]! + spare;
   });
 
-  const fonts = options.fontFaceCss ? `<defs><style>${escapeText(options.fontFaceCss)}</style></defs>` : "";
+  // CDATA, not entity escaping: an SVG inlined into HTML has its <style> read as raw
+  // text, where `&gt;` would stay literal and break any child combinator.
+  const fonts = options.fontFaceCss
+    ? `<defs><style><![CDATA[${options.fontFaceCss.replace(/]]>/g, "]]]]><![CDATA[>")}]]></style></defs>`
+    : "";
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
     fonts +

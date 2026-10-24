@@ -1,5 +1,6 @@
 import { flagHeartRateDropouts } from "../parse/heartRate.js";
 import { targetWattBlocks } from "../parse/blocks.js";
+import { mean, median } from "../parse/stats.js";
 import type { ProgramMode } from "../parse/program.js";
 import type { Sample, Workout } from "../parse/types.js";
 
@@ -150,15 +151,17 @@ function targetWattsCard(workout: Workout, ride: Ride): Body | null {
   // The median of the blocks' medians, unrounded: a headline of 155 W above blocks
   // labelled 152 and 153 reads as a contradiction, whatever the rounding rule.
   const held = median(blocks.map((b) => b.medianWatts));
-  const n = ride.samples.length;
+  const slots = ride.columns.length * ride.perColumn;
   return {
     line,
     hero: `${Math.round(held)}W`,
-    grid: bars(ride, powerOf, 0, ride.topWatts, (indices) => majority(indices, inBlock)),
+    grid: bars(ride, powerOf, ride.topWatts, (indices) => majority(indices, inBlock)),
     gridLabels:
       blocks.length < 2
         ? []
-        : blocks.map((b) => ({ at: (b.startIndex + b.endIndex) / 2 / n, text: String(Math.round(b.medianWatts)) })),
+        : // Positioned in column slots, not samples: a partial last column makes the grid
+        // wider than the sample count.
+        blocks.map((b) => ({ at: (b.startIndex + b.endIndex) / 2 / slots, text: String(Math.round(b.medianWatts)) })),
     strip: heartRateStrip(ride),
     stats: pickStats(ride, ["time", "km", "avgW", "avgBpm", "kcal"]),
   };
@@ -181,7 +184,7 @@ function sprint8Card(workout: Workout, ride: Ride): Body | null {
   return {
     line: "Sweat score",
     hero: String(workout.sprint8.sweatScore),
-    grid: bars(ride, powerOf, 0, ride.topWatts, (indices) => majority(indices, inSprint)),
+    grid: bars(ride, powerOf, ride.topWatts, (indices) => majority(indices, inSprint)),
     gridLabels: [],
     strip: heartRateStrip(ride),
     stats: pickStats(ride, ["time", "km", "avgW", "avgBpm", "kcal"]),
@@ -194,13 +197,13 @@ function targetHeartRateCard(ride: Ride): Body | null {
   const hr = ride.heartRate;
   return {
     line: `Average over ${ride.minutes} min`,
-    hero: `${Math.round(hr.meanBpm)}bpm`,
-    grid: heartRateBars(ride, hr),
+    hero: `${Math.round(hr.averageBpm)}bpm`,
+    grid: heartRateChart(ride, hr.valid, "bars", 8, 2),
     gridLabels: [],
     strip: {
       label: "Power",
       note: `${ride.peakWatts} W peak`,
-      chart: bars(ride, powerOf, 0, ride.topWatts, () => false),
+      chart: bars(ride, powerOf, ride.topWatts, () => false),
     },
     stats: pickStats(ride, ["time", "km", "avgW", "kcal", "avgBpm"]),
   };
@@ -217,7 +220,7 @@ function fitnessTestCard(ride: Ride): Body | null {
   return {
     line: `Reached in ${ride.minutes} min`,
     hero: `${Math.max(...lastMinute.map(powerOf))}W`,
-    grid: bars(ride, powerOf, 0, ride.topWatts, () => true),
+    grid: bars(ride, powerOf, ride.topWatts, () => true),
     gridLabels: [],
     strip: heartRateStrip(ride),
     stats: pickStats(ride, ["time", "km", "avgW", "avgBpm", "kcal"]),
@@ -230,9 +233,9 @@ function virtualActiveCard(ride: Ride): Body {
   return {
     line: `${ride.minutes} min virtual route`,
     hero: `${ride.km}km`,
-    grid: bars(ride, powerOf, 0, ride.topWatts, () => true),
+    grid: bars(ride, powerOf, ride.topWatts, () => true),
     gridLabels: [],
-    strip: { label: "Terrain", note: "", chart: bars(ride, (s) => s.resistanceLevel, 0, top, () => false) },
+    strip: { label: "Terrain", note: "", chart: bars(ride, (s) => s.resistanceLevel, top, () => false) },
     stats: pickStats(ride, ["time", "avgW", "avgBpm", "kcal", "km"]),
   };
 }
@@ -242,7 +245,7 @@ function plainCard(ride: Ride): Body {
   return {
     line: `${ride.minutes} min ride`,
     hero: `${ride.avgWatts}W`,
-    grid: bars(ride, powerOf, 0, ride.topWatts, () => true),
+    grid: bars(ride, powerOf, ride.topWatts, () => true),
     gridLabels: [],
     strip: heartRateStrip(ride),
     stats: pickStats(ride, ["time", "km", "avgBpm", "kcal", "avgW"]),
@@ -255,6 +258,8 @@ interface Ride {
   samples: readonly Sample[];
   /** Sample indices, grouped into the grid's columns. */
   columns: number[][];
+  /** Samples per column; the last column may hold fewer. */
+  perColumn: number;
   minutes: number;
   lastSeconds: number;
   durationSeconds: number;
@@ -264,7 +269,13 @@ interface Ride {
   peakWatts: number;
   /** Top of every power chart: a little headroom above the highest column. */
   topWatts: number;
-  heartRate: { valid: boolean[]; meanBpm: number; maxBpm: number } | null;
+  /**
+   * Present only when enough of the strap survived to draw it. `averageBpm` is the
+   * console's own reported average where there is one — on a glitching strap it is
+   * the better figure (153 against the filtered 151 on 3 Sep, where an Apple Watch
+   * read 153) — and the filtered mean only when the record carries none.
+   */
+  heartRate: { valid: boolean[]; averageBpm: number; maxBpm: number } | null;
 }
 
 function measure(workout: Workout): Ride {
@@ -282,6 +293,7 @@ function measure(workout: Workout): Ride {
   return {
     samples,
     columns,
+    perColumn: per,
     minutes: Math.round(workout.durationSeconds / 60),
     lastSeconds: samples[samples.length - 1]?.elapsedSeconds ?? 0,
     durationSeconds: workout.durationSeconds,
@@ -290,7 +302,9 @@ function measure(workout: Workout): Ride {
     avgWatts: Math.round(mean(power)),
     peakWatts: power.length ? Math.max(...power) : 0,
     topWatts: Math.max(1, ...columnPower) * 1.08,
-    heartRate: covered ? { valid, meanBpm: mean(good), maxBpm: Math.max(...good) } : null,
+    heartRate: covered
+      ? { valid, averageBpm: workout.reported.averageHeartRateBpm ?? mean(good), maxBpm: Math.max(...good) }
+      : null,
   };
 }
 
@@ -298,54 +312,39 @@ function powerOf(s: Sample): number {
   return s.powerWatts;
 }
 
-function bars(
-  ride: Ride,
-  value: (s: Sample) => number,
-  lo: number,
-  hi: number,
-  isFull: (indices: number[]) => boolean,
-): ShareChart {
+/** Columns filled from zero up to `top`. */
+function bars(ride: Ride, value: (s: Sample) => number, top: number, isFull: (indices: number[]) => boolean): ShareChart {
   return {
     kind: "bars",
     columns: ride.columns.map((c) => ({
-      level: clamp((mean(c.map((i) => value(ride.samples[i]!))) - lo) / (hi - lo || 1)),
+      level: clamp(mean(c.map((i) => value(ride.samples[i]!))) / (top || 1)),
       tone: isFull(c) ? "full" : "half",
     })),
   };
 }
 
-/** Per-column means of the samples that survive the dropout filter; a column with none is null. */
-function heartRateColumns(ride: Ride, valid: boolean[]): (number | null)[] {
-  return ride.columns.map((c) => {
+/**
+ * Heart rate per column over the samples that survive the dropout filter — a column
+ * with none is null — scaled between the lowest and highest column, widened by
+ * `below` and `above` bpm so neither extreme sits on the chart's edge.
+ */
+function heartRateChart(ride: Ride, valid: boolean[], kind: ShareChart["kind"], below: number, above: number): ShareChart {
+  const values = ride.columns.map((c) => {
     const good = c.filter((i) => valid[i]).map((i) => ride.samples[i]!.heartRateBpm);
     return good.length ? mean(good) : null;
   });
+  const present = values.filter((v): v is number => v !== null);
+  const lo = Math.min(...present) - below;
+  const span = Math.max(...present) + above - lo || 1;
+  return { kind, columns: values.map((v) => ({ level: v === null ? null : clamp((v - lo) / span), tone: "full" })) };
 }
 
 function heartRateStrip(ride: Ride): ShareStrip | null {
   if (!ride.heartRate) return null;
-  const values = heartRateColumns(ride, ride.heartRate.valid);
-  const present = values.filter((v): v is number => v !== null);
-  const lo = Math.min(...present) - 2;
-  const hi = Math.max(...present);
   return {
     label: "Heart rate",
     note: `${ride.heartRate.maxBpm} bpm max`,
-    chart: {
-      kind: "trace",
-      columns: values.map((v) => ({ level: v === null ? null : clamp((v - lo) / (hi - lo || 1)), tone: "full" })),
-    },
-  };
-}
-
-function heartRateBars(ride: Ride, hr: NonNullable<Ride["heartRate"]>): ShareChart {
-  const values = heartRateColumns(ride, hr.valid);
-  const present = values.filter((v): v is number => v !== null);
-  const lo = Math.min(...present) - 8;
-  const hi = Math.max(...present) + 2;
-  return {
-    kind: "bars",
-    columns: values.map((v) => ({ level: v === null ? null : clamp((v - lo) / (hi - lo)), tone: "full" })),
+    chart: heartRateChart(ride, ride.heartRate.valid, "trace", 2, 0),
   };
 }
 
@@ -357,7 +356,7 @@ function pickStats(ride: Ride, preference: StatKey[]): ShareStat[] {
     time: { value: clock(ride.durationSeconds), label: "time" },
     km: { value: ride.km, label: "km" },
     avgW: { value: String(ride.avgWatts), label: "avg W" },
-    avgBpm: ride.heartRate ? { value: String(Math.round(ride.heartRate.meanBpm)), label: "avg bpm" } : null,
+    avgBpm: ride.heartRate ? { value: String(Math.round(ride.heartRate.averageBpm)), label: "avg bpm" } : null,
     kcal: ride.calories === null ? null : { value: String(ride.calories), label: "kcal" },
   };
   return preference.map((k) => all[k]).filter((s): s is ShareStat => s !== null).slice(0, 4);
@@ -379,15 +378,6 @@ function calendarDay(at: Date, utcOffsetMinutes: number): string {
 function clock(seconds: number): string {
   const s = Math.round(seconds);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
-function mean(values: readonly number[]): number {
-  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-}
-
-function median(values: readonly number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[sorted.length >> 1] ?? 0;
 }
 
 function clamp(x: number): number {

@@ -623,10 +623,13 @@ That page is the spec; this is how the code keeps to it.
   said "heart rate left out"; the absence is the message. Heart rate is drawn only
   when `SHARE_MIN_HEART_RATE_COVERAGE` of the samples survive the dropout filter, and
   it is the first thing to go when a feed card is too short for its grid.
-- **The average heart rate on a card is the filtered one**, because it has to agree
-  with the strip drawn above it. That is a narrower rule than the extension's "two
-  averages, never reconciled", and it is only safe because a card with a glitching
-  strap shows no heart rate at all.
+- **The average heart rate on a card is the console's reported one**, falling back
+  to the filtered mean only when the record carries none. A first draft used the
+  filtered mean so it would agree with the strip, on the theory that a glitching
+  strap shows no heart rate at all — but the 60 % gate lets the badly glitching 3 Sep
+  ride through, and there the filtered 151 is the wrong one (console and Apple Watch
+  both say 153). The strip is still drawn from the filtered series; that is the
+  "two averages" rule from the data-quality notes, applied to one image.
 - **The layout is arithmetic, not measurement.** There is no browser here to measure
   text. Doto is monospaced (0.6 em, measured), so the big number is fitted from its
   length; the sans lines are short by construction. If a program's line ever gets
