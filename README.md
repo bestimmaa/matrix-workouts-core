@@ -72,13 +72,18 @@ wins. Used for one sign-in request, never written to the output and never printe
 
 | Entry point | Holds |
 |---|---|
-| `matrix-workouts-core` | `toWorkout`, `loadCachedWorkouts`, `findWorkout`, `heartRateStats`, `flagHeartRateDropouts`, `controlSignature`, `programMode`, `targetWattBlocks`, `fetchWorkoutHistory`, `loginWithXid`, `readCredentials`, `workoutExport`, and the `Workout` / `Sample` types |
+| `matrix-workouts-core` | `toWorkout`, `loadCachedWorkouts`, `findWorkout`, `heartRateStats`, `flagHeartRateDropouts`, `controlSignature`, `programMode`, `targetWattBlocks`, `shareCard`, `renderShareCardSvg`, `fetchWorkoutHistory`, `loginWithXid`, `readCredentials`, `workoutExport`, and the `Workout` / `Sample` types |
 | `matrix-workouts-core/node` | `httpFetch`, `downloadHistory`, `readRawHistoryFile`, `loadEnvFile` — real fetch, real files |
 
 Units are in the names (`powerWatts`, `cadenceRpm`, `distanceMeters`), because the
 upstream names are ambiguous and one of them — `averageDistance`, which is cumulative
 — is actively misleading. Every record keeps its untouched original under `raw`, so an
 export is lossless even where this model has no name for a field.
+
+`shareCard(workout)` decides what a shareable workout image says — one line and one
+big number per console program — and `renderShareCardSvg(card, { format: "story" })`
+lays it out as an SVG string, 1080 × 1920 or 1080 × 1350 (`"feed"`). Drawing it is
+yours: it names Doto and Instrument Sans and does not carry them.
 
 [MATRIX_API.md](MATRIX_API.md) documents the upstream API: endpoints, wire shapes,
 units, and which parts are verified rather than read out of the site's bundle.

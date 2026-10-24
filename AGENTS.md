@@ -76,6 +76,8 @@ src/
     export/      the JSON a user takes elsewhere (Workout -> document)
   charts — no platform underneath it either, and no renderer
     charts/      chart geometry (data + scale -> path strings, ticks)
+  share — the same, one step further along
+    share/       what a shareable image says, and the SVG string it becomes
   node — where the platform-free promise is cashed in
     node/        real fetch, real files, .env, and the history CLI
 ```
@@ -599,6 +601,47 @@ builder stays ignorant of either.
 
 ---
 
+## The shareable image
+
+What a rider posts after a ride: a 9:16 story or a 4:5 feed card. The design — the
+console's reflective LCD, one dot-matrix grid, one line and one big number per
+program — was settled in mockups on 24 Oct 2026 and is documented, with renders, in
+the "Shareable workout images" section of the
+[project page](https://app.notion.com/p/matrix-workouts-b38b8e99075c4084b554560270fb2381).
+That page is the spec; this is how the code keeps to it.
+
+- **Two steps, on purpose.** `shareCard` decides what a card *says* — every number,
+  every tone — and `renderShareCardSvg` decides where it goes. The first is tested
+  without pixels; the second could be replaced by a consumer that draws natively
+  without re-deriving a number.
+- **Nothing is guessed.** No target wattage (the record has none), no VO₂ or final
+  stage (the console shows them, the record does not), no name for program 0. Where a
+  program's own number cannot be computed — a Sprint 8 ride without scores, a target
+  heart-rate ride with a dead strap, a target-watts ride with no block — the card
+  falls back to the plain ride card instead of making one up.
+- **A missing strip is never explained on the card.** The rider rejected cards that
+  said "heart rate left out"; the absence is the message. Heart rate is drawn only
+  when `SHARE_MIN_HEART_RATE_COVERAGE` of the samples survive the dropout filter, and
+  it is the first thing to go when a feed card is too short for its grid.
+- **The average heart rate on a card is the filtered one**, because it has to agree
+  with the strip drawn above it. That is a narrower rule than the extension's "two
+  averages, never reconciled", and it is only safe because a card with a glitching
+  strap shows no heart rate at all.
+- **The layout is arithmetic, not measurement.** There is no browser here to measure
+  text. Doto is monospaced (0.6 em, measured), so the big number is fitted from its
+  length; the sans lines are short by construction. If a program's line ever gets
+  long, it will overflow — check the snapshots.
+- **Stories keep text out of the top and bottom 250 px**, Meta's guidance for the
+  platform's own overlay. A test asserts it on every fixture.
+- **The fonts travel with the renderer, not the SVG.** It names Doto and Instrument
+  Sans; a consumer bundles them, or passes `fontFaceCss` with data URIs where the
+  renderer cannot load fonts by name (a canvas drawing an SVG image).
+- **The snapshots are the cards.** `src/share/__snapshots__/*.svg` is every fixture in
+  both formats; open one in a browser that has the fonts. A snapshot diff is a visible
+  change to what a rider shares — review it as one, do not just update it.
+
+---
+
 ## Privacy — non-negotiable
 
 This handles personal health data. The consumer decides where it goes; this package
@@ -622,6 +665,12 @@ decides what it refuses to leak.
 - **The export document is a local artifact and must stay one.** No upload, no
   service, no "share" anything, and no failure path that quotes the record it was
   writing into an error string.
+- **The shareable image is the one thing meant to leave, and the rider sends it.**
+  `share/` turns a ride into an SVG string and stops there: no upload, no link back to
+  the record, no account name, no machine id. Handing the picture to a share sheet or
+  a download is the consumer's job and the rider's decision. What is on the card is
+  deliberately less than the export: a date, the program, per-minute shapes and four
+  numbers — never the 10-second heart-rate series.
 
 ---
 

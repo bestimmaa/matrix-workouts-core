@@ -99,6 +99,19 @@ const LAYERS: Layer[] = [
   },
   {
     /*
+     * The shareable workout image: what a card says (`card.ts`) and the SVG string it
+     * becomes (`svg.ts`). A string, not pixels — the extension rasterizes it through a
+     * canvas, the app through `react-native-svg` — so like `charts/` it may name no
+     * platform, and like everything else here it takes no dependency.
+     */
+    name: "share",
+    dirs: ["share"],
+    mayUse: [],
+    mayImport: ["core", "share"],
+    mayTakeDependencies: false,
+  },
+  {
+    /*
      * The one place the platform-free promise is cashed in: real `fetch`, real files,
      * `.env`. Consumers that want it ask for it by name — `matrix-workouts-core/node`
      * — so a browser bundle importing the root entry can never pull `node:fs` in

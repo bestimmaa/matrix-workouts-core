@@ -13,6 +13,13 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   record carries no target and no segments, so this is the only way to say
   "2 × 20 min at 153 W". It returns nothing unless `workout.mode` is
   `"target_watts"`: on other programs the same rules find plateaus that mean nothing.
+- **`share/` — the shareable workout image.** `shareCard(workout, { utcOffsetMinutes })`
+  decides what a card says for each program (target watts, Sprint 8, target heart rate,
+  fitness test, Virtual Active, and a plain card for program 0 and every fallback);
+  `renderShareCardSvg(card, { format, fontFaceCss })` lays it out as an SVG string for
+  a 9:16 story or a 4:5 feed post. No renderer, no dependency — the extension and the
+  app rasterize it themselves. `SHARE_PALETTE`, `SHARE_SIZES`, `SHARE_TARGET_COLUMNS`
+  and `SHARE_MIN_HEART_RATE_COVERAGE` are exported with it.
 - Two target-watts fixtures from the API: `6a8586f5…` (19 Aug, 4 × 4 min at 200 W, a
   strap that returned half its samples) and `6adca6d1…` (24 Oct, one steady 40-minute
   block after the console's warm-up).
