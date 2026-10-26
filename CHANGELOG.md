@@ -13,6 +13,12 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   speed, cumulative distance and heart rate, plus the console's lap summary.
   Heart-rate dropouts are left out rather than written; resistance has no TCX field
   and does not travel. `tcxFilename(workout)` names it after the JSON export.
+- **`workoutTitle(workout)`**: a name for the ride, made of the program and one
+  fact about it, for example "Target watts · 2 × 20 min @ 153 W" or
+  "Sprint 8 · sweat score 9360". Strava reads no name from an uploaded file and
+  won't save an edit without one, so this is what goes in the upload API's `name`.
+- `describeBlocks` and `heldWatts`: the share card's wording for target-watts
+  blocks, moved into `parse/blocks.ts` so the card and the title share one copy.
 
 ## [0.3.0] - 2026-10-24
 
