@@ -618,6 +618,14 @@ must keep:
 - **The lap is the console's summary, the track is the series.** Where they disagree
   they are not reconciled.
 
+**The file carries no name, because Strava wouldn't read one.** Its upload docs
+say it takes only the track and the lap's time and distance from a TCX. Without
+a name, an upload arrives untitled, and the edit form refuses to save until a
+title is added. This was found on the first test upload, 26 Oct 2026. The name
+comes from `workoutTitle` (`src/export/title.ts`), which goes in the upload API's
+`name` field or is typed in by hand. It uses the share card's wording for the
+same program, and `describeBlocks` exists so there is one copy of it.
+
 Not validated against Garmin's XSD in CI, as that would need the schema in the repo.
 Element order follows it by hand, and the tests check structure, not schema.
 

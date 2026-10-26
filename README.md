@@ -72,7 +72,7 @@ wins. Used for one sign-in request, never written to the output and never printe
 
 | Entry point | Holds |
 |---|---|
-| `matrix-workouts-core` | `toWorkout`, `loadCachedWorkouts`, `findWorkout`, `heartRateStats`, `flagHeartRateDropouts`, `controlSignature`, `programMode`, `targetWattBlocks`, `shareCard`, `renderShareCardSvg`, `fetchWorkoutHistory`, `loginWithXid`, `readCredentials`, `workoutExport`, `workoutTcx`, and the `Workout` / `Sample` types |
+| `matrix-workouts-core` | `toWorkout`, `loadCachedWorkouts`, `findWorkout`, `heartRateStats`, `flagHeartRateDropouts`, `controlSignature`, `programMode`, `targetWattBlocks`, `shareCard`, `renderShareCardSvg`, `fetchWorkoutHistory`, `loginWithXid`, `readCredentials`, `workoutExport`, `workoutTcx`, `workoutTitle`, and the `Workout` / `Sample` types |
 | `matrix-workouts-core/node` | `httpFetch`, `downloadHistory`, `readRawHistoryFile`, `loadEnvFile` — real fetch, real files |
 
 Units are in the names (`powerWatts`, `cadenceRpm`, `distanceMeters`), because the

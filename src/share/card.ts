@@ -1,6 +1,6 @@
 import { flagHeartRateDropouts } from "../parse/heartRate.js";
-import { targetWattBlocks } from "../parse/blocks.js";
-import { mean, median } from "../parse/stats.js";
+import { describeBlocks, heldWatts, targetWattBlocks } from "../parse/blocks.js";
+import { mean } from "../parse/stats.js";
 import type { ProgramMode } from "../parse/program.js";
 import type { Sample, Workout } from "../parse/types.js";
 
@@ -138,19 +138,8 @@ function targetWattsCard(workout: Workout, ride: Ride): Body | null {
   const blocks = targetWattBlocks(workout);
   if (blocks.length === 0) return null;
   const inBlock = (i: number): boolean => blocks.some((b) => i >= b.startIndex && i < b.endIndex);
-  const minutes = blocks.map((b) => b.durationSeconds / 60);
-  const mean = minutes.reduce((a, b) => a + b, 0) / minutes.length;
-  const alike = minutes.every((m) => Math.abs(m - mean) / mean <= 0.15);
-  const total = Math.round(minutes.reduce((a, b) => a + b, 0));
-  const line =
-    blocks.length === 1
-      ? `${Math.round(minutes[0]!)} min steady`
-      : alike
-        ? `${blocks.length} × ${Math.round(mean)} min`
-        : `${blocks.length} blocks, ${total} min`;
-  // The median of the blocks' medians, unrounded: a headline of 155 W above blocks
-  // labelled 152 and 153 reads as a contradiction, whatever the rounding rule.
-  const held = median(blocks.map((b) => b.medianWatts));
+  const line = describeBlocks(blocks);
+  const held = heldWatts(blocks);
   const slots = ride.columns.length * ride.perColumn;
   return {
     line,

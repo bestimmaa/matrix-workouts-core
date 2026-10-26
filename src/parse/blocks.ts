@@ -148,3 +148,29 @@ function insertSorted(sorted: number[], value: number): void {
   }
   sorted.splice(lo, 0, value);
 }
+
+/**
+ * The blocks in a few words: "40 min steady", "2 × 20 min", "3 blocks, 36 min".
+ * Blocks within 15 % of their mean length read as repeats; anything less even is
+ * counted rather than described. One wording, shared by the share card and the
+ * ride title, so the two never describe the same ride differently.
+ */
+export function describeBlocks(blocks: readonly PowerBlock[]): string {
+  const minutes = blocks.map((b) => b.durationSeconds / 60);
+  const total = minutes.reduce((a, b) => a + b, 0);
+  const meanMinutes = total / minutes.length;
+  if (blocks.length === 1) return `${Math.round(minutes[0]!)} min steady`;
+  if (minutes.every((m) => Math.abs(m - meanMinutes) / meanMinutes <= 0.15)) {
+    return `${blocks.length} × ${Math.round(meanMinutes)} min`;
+  }
+  return `${blocks.length} blocks, ${Math.round(total)} min`;
+}
+
+/**
+ * The wattage a ride held: the median of the blocks' medians, unrounded. A headline
+ * of 155 W above blocks labelled 152 and 153 reads as a contradiction, whatever the
+ * rounding rule. 0 for no blocks.
+ */
+export function heldWatts(blocks: readonly PowerBlock[]): number {
+  return median(blocks.map((b) => b.medianWatts));
+}
