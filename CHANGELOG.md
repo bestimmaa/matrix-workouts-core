@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+### Added
+
+- **`workoutTcx(workout)`** — the ride as a Garmin TCX file, for uploading to Strava
+  or anything else that takes one: one trackpoint per sample with power, cadence,
+  speed, cumulative distance and heart rate, plus the console's lap summary.
+  Heart-rate dropouts are left out rather than written; resistance has no TCX field
+  and does not travel. `tcxFilename(workout)` names it after the JSON export.
+
 ## [0.3.0] - 2026-10-24
 
 ### Added

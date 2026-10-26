@@ -596,6 +596,31 @@ puts it on a blob URL behind a detached `<a download>`, needing no new permissio
 `downloadHistory` writes it `0600`. Both are consumers of the same builder, and the
 builder stays ignorant of either.
 
+### The TCX file
+
+`workoutTcx` (`src/export/tcx.ts`) turns the same ride into Garmin TCX, which
+Strava and every other training platform accept as an upload. **It is a translation,
+not a second export.** It is lossy on purpose, and the JSON document is still the
+record of the ride. The reasons are in the module's doc comment. The rules a change
+must keep:
+
+- **Each trackpoint sits at the end of its sample's window**, with an opening point
+  at 0 s and 0 m. Cumulative distance is the total once a window closes, never 0 on
+  the first sample, so a start-of-window timestamp would put every point one window
+  early and lose the last ten seconds of the ride.
+- **A zero-duration final sample's distance moves onto the point before it.** It
+  cannot have a point of its own (two points at one instant), and dropping it loses
+  16–113 m. Strava takes the distance from the track, so that would be lost
+  silently. It is the same reason, and the same fix, as the app's HealthKit mapping.
+- **Dropouts are omitted, not written.** That is the opposite of the JSON's "flag,
+  don't scrub", and the destination is why: Strava averages whatever it is given and
+  has no flag to read.
+- **The lap is the console's summary, the track is the series.** Where they disagree
+  they are not reconciled.
+
+Not validated against Garmin's XSD in CI, as that would need the schema in the repo.
+Element order follows it by hand, and the tests check structure, not schema.
+
 ---
 
 
@@ -674,6 +699,10 @@ decides what it refuses to leak.
   a download is the consumer's job and the rider's decision. What is on the card is
   deliberately less than the export: a date, the program, per-minute shapes and four
   numbers — never the 10-second heart-rate series.
+- **The TCX file is the other one meant to leave**, and it does carry the 10-second
+  series, because the series is the whole point of uploading it. It carries no
+  `workoutId`, no `machineId` and no account. A test asserts it on every fixture.
+  Uploading it is still the rider's job: no Strava client lives in this package.
 
 ---
 
