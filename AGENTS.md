@@ -629,6 +629,31 @@ same program, and `describeBlocks` exists so there is one copy of it.
 Not validated against Garmin's XSD in CI, as that would need the schema in the repo.
 Element order follows it by hand, and the tests check structure, not schema.
 
+### The FIT file
+
+`workoutFit` (`src/export/fit.ts`) writes the same ride as a binary FIT activity:
+the same track (`src/export/track.ts` is shared, so the two formats cannot place a
+sample differently), the same omitted dropouts (FIT's "invalid" value), and the
+same console summary in the lap and session. A hand-written encoder of about 150
+lines, because the package takes no runtime dependencies.
+
+- **The session says `indoor_cycling`, and Strava does not read it.** This was
+  measured on 26 Oct 2026, uploading by hand: TCX, this FIT, and this FIT plus a
+  `sport` message all arrived as an outdoor Ride with `trainer: false`. The rider's
+  watch rides have `trainer: true`, and that flag is the Indoor Cycling tag. Indoor
+  on Strava comes from the upload request (`trainer=1`), not the file. Don't add
+  device or manufacturer fields to chase it without a measured upload that shows
+  they help.
+- **Strava shows the same figures for FIT and TCX:** distance, elapsed time (from
+  the records, not the session's console duration), power, cadence, HR (149 on the
+  3 Sep ride), calories. The one upload difference: Strava gives a FIT ride a
+  default title ("Afternoon Ride") and a TCX ride none.
+- **Validated against Garmin's own decoder** (`@garmin/fitsdk` 21.218): every
+  fixture passes its integrity check with no errors. That ran outside the repo,
+  because adding it as a dev dependency is a choice nobody has made. In CI,
+  `fit.test.ts` checks both CRCs against an independent bitwise CRC-16 and reads
+  the file back with a small decoder.
+
 ---
 
 

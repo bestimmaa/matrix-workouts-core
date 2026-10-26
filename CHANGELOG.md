@@ -17,6 +17,11 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   fact about it, for example "Target watts · 2 × 20 min @ 153 W" or
   "Sprint 8 · sweat score 9360". Strava reads no name from an uploaded file and
   won't save an edit without one, so this is what goes in the upload API's `name`.
+- **`workoutFit(workout)`**: the ride as a Garmin FIT activity file
+  (`Uint8Array`), with the same track, dropout handling and console summary as
+  the TCX, and `sub_sport = indoor_cycling`. Strava's file upload ignores the
+  sub-sport: a ride is tagged indoor on Strava only through the upload request's
+  `trainer` flag. `fitFilename(workout)` names the file.
 - `describeBlocks` and `heldWatts`: the share card's wording for target-watts
   blocks, moved into `parse/blocks.ts` so the card and the title share one copy.
 
