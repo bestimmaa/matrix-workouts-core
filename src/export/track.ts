@@ -1,19 +1,37 @@
 import { flagHeartRateDropouts } from "../parse/heartRate.js";
+import { BIKE_MACHINE_TYPES } from "../parse/machine.js";
 import { camelizeWorkout, SAMPLE_INTERVAL_SECONDS } from "../parse/workout.js";
-import type { Sample, Workout } from "../parse/types.js";
+import type { Workout } from "../parse/types.js";
 
 /**
- * The ride as a track: points on the ride clock, shared by every file format that
- * takes one (TCX, FIT). Not exported from the package: it is how this repository
- * places samples in time, and both writers must agree on it.
+ * What every upload format says about a ride, decided once: where each sample sits
+ * on the clock, which readings survive, and what the summary is. Shared by the TCX
+ * and FIT writers, which only encode it. Not exported from the package: it is how
+ * this repository renders a ride for someone else's platform, and the writers must
+ * agree on it.
  */
+
+/**
+ * The schema ceiling for cadence in both formats: TCX's `CadenceValue_t` stops at
+ * 254, and FIT's uint8 spends 255 on "invalid".
+ */
+const MAX_CADENCE_RPM = 254;
+
+/** The values a point carries, already judged. Null means "not recorded". */
+export interface Reading {
+  powerWatts: number;
+  cadenceRpm: number;
+  speedMetersPerSecond: number;
+  /** Null where the strap dropped out: left out of the file, not written as a reading. */
+  heartRateBpm: number | null;
+}
 
 /** One trackpoint: a moment on the ride clock and what was true there. */
 export interface Point {
   atSeconds: number;
   distanceMeters: number;
   /** Null for the opening point, which is the start line and nothing more. */
-  reading: { sample: Sample; heartRateValid: boolean } | null;
+  reading: Reading | null;
 }
 
 /**
@@ -56,9 +74,43 @@ export function trackpoints(workout: Workout): Point[] {
     points.push({
       atSeconds: end,
       distanceMeters: sample.cumulativeDistanceMeters,
-      reading: { sample, heartRateValid: valid[index] ?? false },
+      reading: {
+        powerWatts: sample.powerWatts,
+        cadenceRpm: Math.min(sample.cadenceRpm, MAX_CADENCE_RPM),
+        speedMetersPerSecond: sample.speedKmh / 3.6,
+        heartRateBpm: valid[index] ? sample.heartRateBpm : null,
+      },
     });
   });
 
   return points;
+}
+
+/**
+ * The console's own summary of the ride, as the lap or session carries it. Not
+ * reconciled with the track: the record's `duration` and `distance` rarely match the
+ * samples exactly (see AGENTS.md), and both are carried as they are.
+ */
+export interface RideSummary {
+  /** Upright or recumbent bike. Anything else, including "unknown", is not called cycling. */
+  bike: boolean;
+  durationSeconds: number;
+  distanceMeters: number;
+  calories: number | null;
+  /** Null where the console reported none, or 0 — a strap that was never paired. */
+  averageHeartRateBpm: number | null;
+  maxHeartRateBpm: number | null;
+}
+
+const heartRate = (bpm: number | null): number | null => (bpm !== null && bpm > 0 ? bpm : null);
+
+export function rideSummary(workout: Workout): RideSummary {
+  return {
+    bike: BIKE_MACHINE_TYPES.includes(workout.machineType),
+    durationSeconds: workout.durationSeconds,
+    distanceMeters: workout.distanceMeters,
+    calories: workout.calories,
+    averageHeartRateBpm: heartRate(workout.reported.averageHeartRateBpm),
+    maxHeartRateBpm: heartRate(workout.reported.maxHeartRateBpm),
+  };
 }

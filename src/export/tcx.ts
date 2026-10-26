@@ -1,6 +1,6 @@
 import type { Workout } from "../parse/types.js";
 import { exportFilename } from "./document.js";
-import { trackpoints, type Point } from "./track.js";
+import { rideSummary, trackpoints, type Point } from "./track.js";
 
 /**
  * The ride as a Garmin TCX file, which is what Strava, Garmin Connect and most other
@@ -19,16 +19,12 @@ import { trackpoints, type Point } from "./track.js";
  *  - **Nothing identifies the rider or the machine.** No `workoutId`, no `machineId`:
  *    this is a file meant to leave, so it carries the ride and only the ride.
  *
- * The lap is the console's summary and the track is the series, and where the two
- * disagree — the record's `duration` and `distance` rarely match the samples
- * exactly, see AGENTS.md — both are carried as they are rather than reconciled.
+ * What the file says — the track, which readings survive, the lap's summary — is
+ * decided in `track.ts`, shared with the FIT writer. This file only spells it in XML.
  */
 
 const TCX_NS = "http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2";
 const ACTIVITY_EXTENSION_NS = "http://www.garmin.com/xmlschemas/ActivityExtension/v2";
-
-/** The schema's `CadenceValue_t` stops here. */
-const MAX_CADENCE_RPM = 254;
 
 /** Enough digits to keep the data, few enough not to print float noise. */
 const decimal = (value: number, digits: number): string => String(Number(value.toFixed(digits)));
@@ -43,16 +39,15 @@ function trackpointXml(point: Point, startMs: number): string[] {
   ];
   const { reading } = point;
   if (reading) {
-    const { sample, heartRateValid } = reading;
-    if (heartRateValid) {
-      lines.push(`  <HeartRateBpm><Value>${integer(sample.heartRateBpm)}</Value></HeartRateBpm>`);
+    if (reading.heartRateBpm !== null) {
+      lines.push(`  <HeartRateBpm><Value>${integer(reading.heartRateBpm)}</Value></HeartRateBpm>`);
     }
     lines.push(
-      `  <Cadence>${integer(Math.min(sample.cadenceRpm, MAX_CADENCE_RPM))}</Cadence>`,
+      `  <Cadence>${integer(reading.cadenceRpm)}</Cadence>`,
       "  <Extensions>",
       "    <ns3:TPX>",
-      `      <ns3:Speed>${decimal(sample.speedKmh / 3.6, 3)}</ns3:Speed>`,
-      `      <ns3:Watts>${integer(sample.powerWatts)}</ns3:Watts>`,
+      `      <ns3:Speed>${decimal(reading.speedMetersPerSecond, 3)}</ns3:Speed>`,
+      `      <ns3:Watts>${integer(reading.powerWatts)}</ns3:Watts>`,
       "    </ns3:TPX>",
       "  </Extensions>",
     );
@@ -61,9 +56,9 @@ function trackpointXml(point: Point, startMs: number): string[] {
   return lines;
 }
 
-/** The schema's `HeartRateInBeatsPerMinute_t` starts at 1, so an absent figure is no element. */
+/** An absent figure is no element: the schema's `HeartRateInBeatsPerMinute_t` starts at 1. */
 function heartRateXml(tag: string, bpm: number | null): string[] {
-  return bpm !== null && bpm > 0 ? [`<${tag}><Value>${integer(bpm)}</Value></${tag}>`] : [];
+  return bpm !== null ? [`<${tag}><Value>${integer(bpm)}</Value></${tag}>`] : [];
 }
 
 const indent = (lines: string[], depth: number): string[] =>
@@ -76,15 +71,16 @@ const indent = (lines: string[], depth: number): string[] =>
 export function workoutTcx(workout: Workout): string {
   const startedAt = workout.startedAt.toISOString();
   const startMs = workout.startedAt.getTime();
-  const sport = workout.machineType.endsWith("_bike") ? "Biking" : "Other";
+  const summary = rideSummary(workout);
+  const sport = summary.bike ? "Biking" : "Other";
 
   const lap = [
-    `<TotalTimeSeconds>${decimal(workout.durationSeconds, 1)}</TotalTimeSeconds>`,
-    `<DistanceMeters>${decimal(workout.distanceMeters, 2)}</DistanceMeters>`,
+    `<TotalTimeSeconds>${decimal(summary.durationSeconds, 1)}</TotalTimeSeconds>`,
+    `<DistanceMeters>${decimal(summary.distanceMeters, 2)}</DistanceMeters>`,
     // Required by the schema. 0 is the format's own "not recorded".
-    `<Calories>${integer(workout.calories ?? 0)}</Calories>`,
-    ...heartRateXml("AverageHeartRateBpm", workout.reported.averageHeartRateBpm),
-    ...heartRateXml("MaximumHeartRateBpm", workout.reported.maxHeartRateBpm),
+    `<Calories>${integer(summary.calories ?? 0)}</Calories>`,
+    ...heartRateXml("AverageHeartRateBpm", summary.averageHeartRateBpm),
+    ...heartRateXml("MaximumHeartRateBpm", summary.maxHeartRateBpm),
     "<Intensity>Active</Intensity>",
     "<TriggerMethod>Manual</TriggerMethod>",
     "<Track>",
@@ -108,7 +104,7 @@ export function workoutTcx(workout: Workout): string {
   ].join("\n");
 }
 
-/** The JSON export's name with the TCX extension, so one ride's two files sort together. */
+/** The JSON export's name with the TCX extension. */
 export function tcxFilename(workout: Workout): string {
-  return exportFilename(workout).replace(/\.json$/, ".tcx");
+  return exportFilename(workout, "tcx");
 }
