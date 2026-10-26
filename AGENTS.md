@@ -601,7 +601,10 @@ builder stays ignorant of either.
 `workoutTcx` (`src/export/tcx.ts`) turns the same ride into Garmin TCX, which
 Strava and every other training platform accept as an upload. **It is a translation,
 not a second export.** It is lossy on purpose, and the JSON document is still the
-record of the ride. The reasons are in the module's doc comment. The rules a change
+record of the ride. The reasons are in the module's doc comment. The rules below
+live in `src/export/track.ts`: the track, which readings survive, and the lap's
+summary. They are shared with the FIT writer, so the two upload formats cannot say
+different things about one ride, and each writer only encodes. The rules a change
 must keep:
 
 - **Each trackpoint sits at the end of its sample's window**, with an opening point
@@ -631,11 +634,10 @@ Element order follows it by hand, and the tests check structure, not schema.
 
 ### The FIT file
 
-`workoutFit` (`src/export/fit.ts`) writes the same ride as a binary FIT activity:
-the same track (`src/export/track.ts` is shared, so the two formats cannot place a
-sample differently), the same omitted dropouts (FIT's "invalid" value), and the
-same console summary in the lap and session. A hand-written encoder of about 150
-lines, because the package takes no runtime dependencies.
+`workoutFit` (`src/export/fit.ts`) writes the same ride as a binary FIT activity.
+It encodes the same `track.ts` decisions as the TCX: dropouts become FIT's
+"invalid" value, and the console's summary goes in the lap and session. The
+encoder is hand-written because the package takes no runtime dependencies.
 
 - **The session says `indoor_cycling`, and Strava does not read it.** This was
   measured on 26 Oct 2026, uploading by hand: TCX, this FIT, and this FIT plus a
@@ -732,10 +734,12 @@ decides what it refuses to leak.
   a download is the consumer's job and the rider's decision. What is on the card is
   deliberately less than the export: a date, the program, per-minute shapes and four
   numbers — never the 10-second heart-rate series.
-- **The TCX file is the other one meant to leave**, and it does carry the 10-second
-  series, because the series is the whole point of uploading it. It carries no
-  `workoutId`, no `machineId` and no account. A test asserts it on every fixture.
-  Uploading it is still the rider's job: no Strava client lives in this package.
+- **The TCX and FIT files are the other two meant to leave**, and they do carry the
+  10-second series, because the series is the whole point of uploading. They carry
+  no `workoutId`, no `machineId` and no account. Tests assert this on every
+  fixture: the TCX text names neither id, and the FIT file writes exactly six
+  message types, with no `device_info` and no serial number. Uploading is still
+  the rider's job: no Strava client lives in this package.
 
 ---
 

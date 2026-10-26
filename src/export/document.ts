@@ -153,10 +153,11 @@ export function workoutExport(workout: Workout, now: Date = new Date()): Workout
 /**
  * A filename that sorts by date and still names the ride uniquely. The date is the
  * UTC one from `workoutTime` rather than a localized rendering, so two exports of
- * the same ride from two machines agree.
+ * the same ride from two machines agree. The TCX and FIT files of a ride share the
+ * name with their own extension, so one ride's files sort together.
  */
-export function exportFilename(workout: Workout): string {
-  return `matrix-workout-${workout.startedAt.toISOString().slice(0, 10)}-${workout.id}.json`;
+export function exportFilename(workout: Workout, extension = "json"): string {
+  return `matrix-workout-${workout.startedAt.toISOString().slice(0, 10)}-${workout.id}.${extension}`;
 }
 
 /** The document as the text that gets written. Indented — this is meant to be read. */

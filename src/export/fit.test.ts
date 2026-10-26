@@ -8,10 +8,17 @@ import { trackpoints } from "./track.js";
 
 const FIXTURES = new URL("../../fixtures/", import.meta.url);
 
-const load = (id: string): Workout =>
-  toWorkout(
-    JSON.parse(readFileSync(fileURLToPath(new URL(`raw-${id}.json`, FIXTURES)), "utf8")) as Record<string, unknown>,
-  );
+const parsed = new Map<string, Workout>();
+/** Parsed once per fixture: every `it.each` below reads all of them. */
+const load = (id: string): Workout => {
+  let workout = parsed.get(id);
+  if (!workout) {
+    const path = fileURLToPath(new URL(`raw-${id}.json`, FIXTURES));
+    workout = toWorkout(JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>);
+    parsed.set(id, workout);
+  }
+  return workout;
+};
 
 const ALL = readdirSync(fileURLToPath(FIXTURES))
   .map((name) => /^raw-(.+)\.json$/.exec(name)?.[1])
@@ -77,10 +84,11 @@ const FIT_EPOCH_S = Date.UTC(1989, 11, 31) / 1000;
 describe("workoutFit", () => {
   it.each(ALL)("is a FIT file whose header and file CRCs check out: %s", (id) => {
     const file = workoutFit(load(id));
+    const view = new DataView(file.buffer, file.byteOffset, file.byteLength);
     expect(file[0]).toBe(14);
     expect(String.fromCharCode(...file.subarray(8, 12))).toBe(".FIT");
-    expect(new DataView(file.buffer).getUint16(12, true)).toBe(crc16(file.subarray(0, 12)));
-    expect(new DataView(file.buffer).getUint32(4, true)).toBe(file.length - 16);
+    expect(view.getUint16(12, true)).toBe(crc16(file.subarray(0, 12)));
+    expect(view.getUint32(4, true)).toBe(file.length - 16);
     // A CRC over the data followed by its own CRC is zero.
     expect(crc16(file)).toBe(0);
   });
@@ -103,8 +111,9 @@ describe("workoutFit", () => {
       expect(record.fields.get(253)).toBe(Math.round(start + point.atSeconds));
       expect(record.fields.get(5)).toBe(Math.round(point.distanceMeters * 100));
       if (point.reading) {
-        expect(record.fields.get(7)).toBe(Math.round(point.reading.sample.powerWatts));
-        expect(record.fields.get(4)).toBe(Math.round(point.reading.sample.cadenceRpm));
+        expect(record.fields.get(7)).toBe(Math.round(point.reading.powerWatts));
+        expect(record.fields.get(4)).toBe(Math.round(point.reading.cadenceRpm));
+        expect(record.fields.get(6)).toBe(Math.round(point.reading.speedMetersPerSecond * 1000));
       } else {
         expect(record.fields.get(7)).toBeNull();
       }
@@ -129,7 +138,36 @@ describe("workoutFit", () => {
   });
 
   it("writes the same bytes for the same ride", () => {
-    expect(workoutFit(load(TARGET_HR_CLEAN))).toEqual(workoutFit(load(TARGET_HR_CLEAN)));
+    const workout = load(TARGET_HR_CLEAN);
+    expect(workoutFit(workout)).toEqual(workoutFit(workout));
+  });
+
+  /*
+   * The file is meant to leave, so it carries exactly these six message types. No
+   * device_info (23), no serial number on file_id: nothing that names the physical
+   * machine, whatever someone tries next to get Strava to mark a ride indoor.
+   */
+  it.each(ALL)("writes only the six message types it means to, and no serial number: %s", (id) => {
+    const messages = decode(workoutFit(load(id)));
+    expect(new Set(messages.map((m) => m.global))).toEqual(new Set([0, 21, 20, 19, 18, 34]));
+    const fileId = messages.find((m) => m.global === 0)!;
+    expect([...fileId.fields.keys()]).not.toContain(3); // serial_number
+  });
+
+  it("does not call a machine that is not a bike cycling", () => {
+    const session = decode(workoutFit({ ...load(TARGET_HR_CLEAN), machineType: "treadmill" })).find(
+      (m) => m.global === SESSION,
+    )!;
+    expect(session.fields.get(5)).toBe(0); // sport: generic
+    expect(session.fields.get(6)).toBe(0); // sub_sport: generic
+  });
+
+  it("writes a reported heart rate of 0 as no figure, not as 0 bpm", () => {
+    const workout = load(TARGET_HR_CLEAN);
+    const unpaired = { ...workout, reported: { ...workout.reported, averageHeartRateBpm: 0, maxHeartRateBpm: 0 } };
+    const session = decode(workoutFit(unpaired)).find((m) => m.global === SESSION)!;
+    expect(session.fields.get(16)).toBeNull();
+    expect(session.fields.get(17)).toBeNull();
   });
 });
 
