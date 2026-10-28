@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
-## [Unreleased]
+## [0.4.0] - 2026-10-28
 
 ### Added
 
@@ -28,6 +28,12 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   the TCX, and `sub_sport = indoor_cycling`. Strava's file upload ignores the
   sub-sport: a ride is tagged indoor on Strava only through the upload request's
   `trainer` flag. `fitFilename(workout)` names the file.
+- **`stravaUpload(workout)`**: what a Strava upload of the ride says, without
+  making it: the FIT file, plus the form fields `data_type`, `name` (the
+  `workoutTitle`), `trainer: "1"` (the only way a ride arrives as indoor) and an
+  `external_id` made from the start time, so neither the request nor the
+  filename carries the workout id. The request, sign-in and polling stay with
+  the consumer.
 - `describeBlocks` and `heldWatts`: the share card's wording for target-watts
   blocks, moved into `parse/blocks.ts` so the card and the title share one copy.
 
