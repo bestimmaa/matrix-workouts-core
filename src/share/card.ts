@@ -232,18 +232,15 @@ function virtualActiveCard(ride: Ride): Body {
 }
 
 /**
- * The console's hill profile drives resistance, so resistance is drawn as the hills.
- * The record names neither the profile nor its height — `programLevel` reads 1 on
- * every API record seen, in every program — so the number is the rider's own output.
+ * The plain card with the hills drawn in place of heart rate: the console's profile
+ * drives resistance. The record names neither the profile nor its level, so the
+ * number stays the rider's own output.
  */
 function hillsCard(ride: Ride): Body {
   return {
+    ...plainCard(ride),
     line: `${ride.minutes} min of hills`,
-    hero: `${ride.avgWatts}W`,
-    grid: bars(ride, powerOf, ride.topWatts, () => true),
-    gridLabels: [],
     strip: { label: "Hills", note: "", chart: terrain(ride) },
-    stats: pickStats(ride, ["time", "km", "avgBpm", "kcal", "avgW"]),
   };
 }
 

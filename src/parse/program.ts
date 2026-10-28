@@ -3,8 +3,9 @@
  *
  * `programType` is the numeric console program id and is the mode marker. Values
  * observed across one account's 44 workouts: 46 (27x), 18 (7x), 20 (4x), 47 (3x),
- * 0 (2x), 38 (1x); 8 first appeared on 28 Oct 2026. Only the ids the rider has confirmed are named here — the rest
- * are deliberately left unmapped rather than guessed at.
+ * 0 (2x), 38 (1x); 8 first appeared on 28 Oct 2026. Only the ids the rider has
+ * confirmed are named here — the rest are deliberately left unmapped rather than
+ * guessed at.
  */
 export type ProgramMode =
   | "sprint_8"
