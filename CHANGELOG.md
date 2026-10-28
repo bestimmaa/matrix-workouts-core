@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
-## [0.4.0] - 2026-10-28
+## [Unreleased]
 
 ### Added
 
@@ -13,6 +13,10 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   `Record<ProgramMode, …>` in a consumer needs a case for it. The title reads
   "Hills · 12 min", and the share card draws the climbs as the strip under the
   power grid, the way Virtual Active draws its terrain.
+
+## [0.4.0] - 2026-10-28
+
+### Added
 
 - **`workoutTcx(workout)`** — the ride as a Garmin TCX file, for uploading to Strava
   or anything else that takes one: one trackpoint per sample with power, cadence,
