@@ -240,7 +240,7 @@ function hillsCard(ride: Ride): Body {
   return {
     ...plainCard(ride),
     line: `${ride.minutes} min of hills`,
-    strip: { label: "Hills", note: "", chart: terrain(ride) },
+    strip: { label: "Resistance", note: "", chart: terrain(ride) },
   };
 }
 
