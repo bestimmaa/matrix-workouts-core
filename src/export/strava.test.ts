@@ -30,7 +30,7 @@ describe("stravaUpload", () => {
       data_type: "fit",
       name: "Target watts · 2 × 20 min @ 153 W",
       trainer: "1",
-      external_id: `matrix-workout-${workout.startedAt.toISOString().slice(0, 19).replaceAll(":", "-")}Z`,
+      external_id: "matrix-workout-2026-09-03T14-09-19Z",
     });
     expect(upload.file.filename).toBe(`${upload.fields.external_id}.fit`);
     expect(upload.file.bytes).toEqual(workoutFit(workout));
