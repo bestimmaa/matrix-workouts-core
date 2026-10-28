@@ -8,3 +8,4 @@ coverage/
 !.env.example
 history/
 *.tgz
+.claude/worktrees/
