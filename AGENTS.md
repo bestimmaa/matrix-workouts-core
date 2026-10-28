@@ -655,6 +655,12 @@ encoder is hand-written because the package takes no runtime dependencies.
   because adding it as a dev dependency is a choice nobody has made. In CI,
   `fit.test.ts` checks both CRCs against an independent bitwise CRC-16 and reads
   the file back with a small decoder.
+- **`stravaUpload` is the upload request's contents, and stops there.** It pairs
+  the FIT bytes with `trainer: "1"`, the title, and an `external_id` built from
+  the start time. Strava uses the filename as the external id when none is given,
+  and `fitFilename` carries the workout id, so the upload is named by its start
+  time instead. A test checks every fixture for this. The HTTP request, the OAuth
+  sign-in and the status polling belong to the consumer that makes them.
 
 ---
 
@@ -738,8 +744,9 @@ decides what it refuses to leak.
   10-second series, because the series is the whole point of uploading. They carry
   no `workoutId`, no `machineId` and no account. Tests assert this on every
   fixture: the TCX text names neither id, and the FIT file writes exactly six
-  message types, with no `device_info` and no serial number. Uploading is still
-  the rider's job: no Strava client lives in this package.
+  message types, with no `device_info` and no serial number. `stravaUpload`
+  describes the upload request, and a consumer makes it when the rider presses a
+  button. No Strava client lives in this package.
 
 ---
 
