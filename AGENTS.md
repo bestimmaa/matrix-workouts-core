@@ -312,6 +312,7 @@ Observed across one account's 44 workouts:
 | 20 | 4 | **Target watts** (constant power) — *confirmed* | — |
 | 47 | 3 | **Virtual Active** (scenic route) — *confirmed* | — |
 | 38 | 1 | **Fitness test** — the console's "Fitness Test (Ramp Test)" — *confirmed* | — |
+| 8 | — | **Hills** — *confirmed*; first ridden 28 Oct 2026, after this count | — |
 | 0 | 2 | *unidentified* | — |
 
 ### How the mapping was established
@@ -347,6 +348,15 @@ Matching a ride's date and duration against that log identifies its mode directl
   off the console for the 2026-09-13 ride — 2403 s, 20.37 km, 144.8 W mean, 241
   samples, `id` `6aa67d338d2b6d09c6412d7b`. That is one confirmed ride naming an
   id, the same standard that pinned 38.
+
+- **8 = Hills**, the console's hill-profile program: it raises and lowers resistance
+  on a fixed profile and the rider rides it. Reported by the rider off the console
+  for the 2026-10-28 ride, `6ae23c32fd6f5afe80ac7a79`: 715 s, 5.05 km, 96 W mean,
+  72 samples — the only program-8 ride in the account. Its resistance reads as two
+  climbs (`3 → 8`, down to 4, `4 → 8`) and a cool-down at level 1. That is the shape
+  of *one* ride: the console's profile and its level are not in the record
+  (`program_level` is 1 on every API record — see MATRIX_API.md), so do not detect
+  hills from it or describe the profile on a card.
 
 **What 47 buys and what it does not.** The other two program-47 rides (17 Aug, 3 min;
 and a 21 min one) inherit the name **by id**, with no confirmation of their own, and
@@ -772,6 +782,7 @@ Use it when changing anything about heart-rate filtering.
 | `6aa2d8a8…` | **18 Sprint 8** | 121 | **the post-change shape**: `sprintScores` and `totalSweatScore`, but *neither* level field. The only fixture exercising `sprint8ProgramLevel ?? programLevel` with both absent — which is now the only case that occurs |
 | `6a941332…` | 0 | 61 | unidentified program |
 | `6a8336b6…` | **47 Virtual Active** | 19 | shortest ride — guards off-by-one on tiny series |
+| `6ae23c32…` | **8 Hills** | 72 | the ride that named program 8, and the only one. API-shaped, so snake_case and not in `persist-root.json` |
 | `6aa67d33…` | **47 Virtual Active** | 241 | the ride that *named* program 47. 40 min of terrain-driven resistance — long plateaus, 22 changes, mean step 1.73 — which is the counter-example the resistance-step section argues from |
 | `6a7cab8c…` | 20 target watts | 277 | the confirmed watt-target ride |
 | `6a6368cb…` | 46 | 376 | **recumbent** — the only non-upright ride; strap dead for 215 samples; final sample `duration: 8` |

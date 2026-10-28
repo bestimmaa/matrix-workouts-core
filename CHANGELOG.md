@@ -8,6 +8,12 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
 
 ### Added
 
+- **Program 8 is `"hills"`**, the console's Hills program, confirmed by the rider
+  off the console. `ProgramMode` gains the value, so an exhaustive `switch` or
+  `Record<ProgramMode, …>` in a consumer needs a case for it. The title reads
+  "Hills · 12 min", and the share card draws the climbs as the strip under the
+  power grid, the way Virtual Active draws its terrain.
+
 - **`workoutTcx(workout)`** — the ride as a Garmin TCX file, for uploading to Strava
   or anything else that takes one: one trackpoint per sample with power, cadence,
   speed, cumulative distance and heart rate, plus the console's lap summary.

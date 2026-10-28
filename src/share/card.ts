@@ -101,6 +101,7 @@ const PROGRAM_NAMES: Readonly<Record<ProgramMode, string | null>> = {
   target_heart_rate: "Target heart rate",
   fitness_test: "Fitness test",
   virtual_active: "Virtual Active",
+  hills: "Hills",
   unknown: null,
 };
 
@@ -129,6 +130,8 @@ function programCard(workout: Workout, ride: Ride): Body | null {
       return fitnessTestCard(ride);
     case "virtual_active":
       return virtualActiveCard(ride);
+    case "hills":
+      return hillsCard(ride);
     case "unknown":
       return null;
   }
@@ -218,14 +221,29 @@ function fitnessTestCard(ride: Ride): Body | null {
 
 /** The route's terrain drives resistance, so resistance is drawn as the route's profile. */
 function virtualActiveCard(ride: Ride): Body {
-  const top = Math.max(...ride.samples.map((s) => s.resistanceLevel), 1);
   return {
     line: `${ride.minutes} min virtual route`,
     hero: `${ride.km}km`,
     grid: bars(ride, powerOf, ride.topWatts, () => true),
     gridLabels: [],
-    strip: { label: "Terrain", note: "", chart: bars(ride, (s) => s.resistanceLevel, top, () => false) },
+    strip: { label: "Terrain", note: "", chart: terrain(ride) },
     stats: pickStats(ride, ["time", "avgW", "avgBpm", "kcal", "km"]),
+  };
+}
+
+/**
+ * The console's hill profile drives resistance, so resistance is drawn as the hills.
+ * The record names neither the profile nor its height — `programLevel` reads 1 on
+ * every API record seen, in every program — so the number is the rider's own output.
+ */
+function hillsCard(ride: Ride): Body {
+  return {
+    line: `${ride.minutes} min of hills`,
+    hero: `${ride.avgWatts}W`,
+    grid: bars(ride, powerOf, ride.topWatts, () => true),
+    gridLabels: [],
+    strip: { label: "Hills", note: "", chart: terrain(ride) },
+    stats: pickStats(ride, ["time", "km", "avgBpm", "kcal", "avgW"]),
   };
 }
 
@@ -310,6 +328,12 @@ function bars(ride: Ride, value: (s: Sample) => number, top: number, isFull: (in
       tone: isFull(c) ? "full" : "half",
     })),
   };
+}
+
+/** Resistance level per column, against the ride's own highest level. */
+function terrain(ride: Ride): ShareChart {
+  const top = Math.max(...ride.samples.map((s) => s.resistanceLevel), 1);
+  return bars(ride, (s) => s.resistanceLevel, top, () => false);
 }
 
 /**

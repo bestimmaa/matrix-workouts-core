@@ -158,6 +158,10 @@ and `totalSweatScore`, `sprintScores`, `sprint8ProgramLevel` on **Sprint 8 rides
 already disappeared from records that still carry the Sprint 8 scores. Never assume a
 field is meaningful just because it is present and zero.
 
+**Nor just because it is present and non-zero.** Read on 28 Oct 2026 across one
+account's 74 API records, `program_level` is `1` on every one of them, in all seven
+programs. Nothing yet shows it ever carries the level that was ridden.
+
 ### Interval fields — the reason this project exists
 
 Each entry in `intervals` is one ~10-second sample:

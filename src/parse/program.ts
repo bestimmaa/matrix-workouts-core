@@ -3,7 +3,7 @@
  *
  * `programType` is the numeric console program id and is the mode marker. Values
  * observed across one account's 44 workouts: 46 (27x), 18 (7x), 20 (4x), 47 (3x),
- * 0 (2x), 38 (1x). Only the ids the rider has confirmed are named here — the rest
+ * 0 (2x), 38 (1x); 8 first appeared on 28 Oct 2026. Only the ids the rider has confirmed are named here — the rest
  * are deliberately left unmapped rather than guessed at.
  */
 export type ProgramMode =
@@ -12,6 +12,7 @@ export type ProgramMode =
   | "target_watts"
   | "fitness_test"
   | "virtual_active"
+  | "hills"
   | "unknown";
 
 export const PROGRAM_MODES: Readonly<Record<number, ProgramMode>> = Object.freeze({
@@ -20,6 +21,7 @@ export const PROGRAM_MODES: Readonly<Record<number, ProgramMode>> = Object.freez
   20: "target_watts",      // all 4 rides are watt-target sessions in the log
   38: "fitness_test",      // console VO2 / Cooper test; exact match in the log
   47: "virtual_active",    // confirmed by rider off the console, 13 Sep 2026 ride
+  8: "hills",              // confirmed by rider off the console, 28 Oct 2026 ride
 });
 
 /**
@@ -49,6 +51,11 @@ export const PROGRAM_MODES: Readonly<Record<number, ProgramMode>> = Object.freez
  *    from the series: both 47 rides open 1, 4, 4, 4, ... which looks like a
  *    signature until you check `raw-6aa04566...`, a program 46, which opens
  *    1, 4, 4 as well.
+ *  - **8 = Hills**, the console's hill-profile program: the console climbs and
+ *    descends resistance on a fixed profile. Reported by the rider for the
+ *    2026-10-28 ride (715 s, 5.05 km, 96 W average), the only program-8 ride in
+ *    the account. Its series reads as two climbs (3 -> 8, back to 4, 4 -> 8)
+ *    and a cool-down at level 1, but that is one ride, not a profile to detect.
  *
  * Program 0 remains "unknown": its rides are in the log but no entry names a console
  * mode, and the telemetry does not separate it. It is plausibly manual / quick-start

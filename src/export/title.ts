@@ -21,6 +21,7 @@ const PROGRAM_TITLES: Readonly<Record<ProgramMode, string>> = {
   target_heart_rate: "Target heart rate",
   fitness_test: "Fitness test",
   virtual_active: "Virtual Active",
+  hills: "Hills",
   unknown: "Indoor ride",
 };
 
@@ -53,6 +54,8 @@ function programFact(workout: Workout): string | null {
     }
     case "virtual_active":
       return `${(workout.distanceMeters / 1000).toFixed(1)} km`;
+    // A profile run for a set time: the minutes are the program's own figure.
+    case "hills":
     case "unknown":
       return null;
   }
