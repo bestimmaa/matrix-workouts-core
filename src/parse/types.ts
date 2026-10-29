@@ -79,7 +79,7 @@ export interface Sample {
   speedKmh: number;
   cadenceRpm: number;
   powerWatts: number;
-  /** Console resistance level. Range is machine- and program-dependent (1–13 observed). */
+  /** Console resistance level. Range is machine- and program-dependent (1–30 observed). */
   resistanceLevel: number;
   heartRateBpm: number;
   inclinePercent: number;
