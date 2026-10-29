@@ -402,6 +402,26 @@ numbers are in `src/parse/blocks.ts`, and `npm test` pins every one.
 To close 0: ride it once and read the mode off the console, then add a row to the
 training log so the ride can be matched.
 
+### The Sprint 8 layout is the protocol's, not the series'
+
+Sprint 8 is a fixed protocol: 3 min warm-up, then sprint *i* (0–7) at
+`180 + 120·i` s for 30 s with 90 s of recovery between, in a 1200 s ride. Matrix
+states the eight 30-second sprints in 20 minutes; both Sprint 8 fixtures pin the
+seconds — same boundaries, at resistance 20→23 on one and 21→24 on the other, so
+**level moves resistance, not timing**. `sprint8Segments` lays the eight scores onto
+those windows.
+
+It returns `null` unless the ride is the whole 1200 s, its series covers it, and every
+window shows the resistance spike — a ride abandoned after three sprints gets no
+layout rather than eight windows, five of them invented. Everything after sprint 8 is
+one cool-down: the console's last recovery and its cool-down run at the same
+resistance on `6aa2d8a8…`, so the record does not separate them.
+
+**Do not extend this to Target HR (46).** Its opening ramp is the loop chasing a
+target from a cold heart rate, not a scripted phase, and nothing recorded marks a
+warm-up or cool-down — deriving them would be inventing, the same reason 0 stays
+unmapped.
+
 ### Prefer the derived control signature over the program id
 
 Because the ids are only partly decoded, `controlSignature(samples)` reads how the
