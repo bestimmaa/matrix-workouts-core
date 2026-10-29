@@ -1,3 +1,4 @@
+import { mean } from "./stats.js";
 import type { Sample } from "./types.js";
 
 /**
@@ -48,7 +49,7 @@ export function controlSignature(samples: readonly Sample[]): ControlSignature {
     if (delta > 0) steps.push(delta);
   }
   const changes = steps.length;
-  const meanStep = changes ? steps.reduce((a, b) => a + b, 0) / changes : 0;
+  const meanStep = mean(steps);
   const changeRate = samples.length ? (changes / samples.length) * 100 : 0;
 
   const powerSpread = power.length ? Math.max(...power) - Math.min(...power) : 0;

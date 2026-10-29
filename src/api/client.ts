@@ -1,6 +1,9 @@
 import { toWorkout } from "../parse/workout.js";
 import type { Workout } from "../parse/types.js";
-import { redact, type Credentials } from "./credentials.js";
+import type { Credentials } from "./credentials.js";
+import { fetchHistoryBody } from "./request.js";
+
+export { ApiError } from "./request.js";
 
 /**
  * Client for the jfit HTTP API — the only route to history deeper than the week
@@ -12,17 +15,6 @@ import { redact, type Credentials } from "./credentials.js";
  * records with every interval, so one request gets everything.
  */
 export const API_ORIGIN = "https://apollo.jfit.co";
-
-export class ApiError extends Error {
-  override name = "ApiError";
-  constructor(
-    message: string,
-    /** HTTP status, or 0 for a transport failure. */
-    readonly status: number,
-  ) {
-    super(message);
-  }
-}
 
 /** Just the part of `fetch` we use, so tests need no network and no globals. */
 export interface FetchInit {
@@ -64,35 +56,7 @@ export async function fetchWorkoutHistory(
   credentials: Credentials,
   fetchImpl: FetchLike,
 ): Promise<HistoryResult> {
-  const url = workoutsUrl(credentials.exerciserId);
-
-  let response: Awaited<ReturnType<FetchLike>>;
-  try {
-    response = await fetchImpl(url, {
-      headers: {
-        Authorization: `Bearer ${credentials.token}`,
-        Accept: "application/json",
-      },
-    });
-  } catch (error) {
-    // A transport failure's message can carry the request, so redact before it
-    // escapes into a UI string or a log.
-    const detail = error instanceof Error ? redact(error.message, credentials.token) : "";
-    throw new ApiError(`Could not reach the workout API. ${detail}`.trim(), 0);
-  }
-
-  if (!response.ok) {
-    throw new ApiError(describeStatus(response.status), response.status);
-  }
-
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new ApiError("The workout API returned something that is not JSON.", response.status);
-  }
-
-  return parseHistoryResponse(body);
+  return parseHistoryResponse(await fetchHistoryBody(workoutsUrl(credentials.exerciserId), credentials, fetchImpl));
 }
 
 /**
@@ -120,15 +84,6 @@ export function parseHistoryResponse(body: unknown): HistoryResult {
   workouts.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
 
   return { workouts, truncated: isTruncated(body, records.length), skipped };
-}
-
-function describeStatus(status: number): string {
-  if (status === 401 || status === 403) {
-    return "The workout API rejected the stored sign-in. Reload the site to refresh it, then try again.";
-  }
-  if (status === 404) return "The workout API has no history for this account.";
-  if (status >= 500) return `The workout API is failing (HTTP ${status}). Try again later.`;
-  return `The workout API refused the request (HTTP ${status}).`;
 }
 
 function extractWorkouts(body: unknown): Record<string, unknown>[] {

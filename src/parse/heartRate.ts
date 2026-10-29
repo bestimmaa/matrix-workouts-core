@@ -1,3 +1,4 @@
+import { mean } from "./stats.js";
 import type { Sample } from "./types.js";
 import { SAMPLE_INTERVAL_SECONDS } from "./workout.js";
 
@@ -131,11 +132,10 @@ export function heartRateStats(
   if (good.length === 0) {
     return { minBpm: null, maxBpm: null, meanBpm: null, validCount: 0, dropoutCount };
   }
-  const sum = good.reduce((a, b) => a + b, 0);
   return {
     minBpm: Math.min(...good),
     maxBpm: Math.max(...good),
-    meanBpm: sum / good.length,
+    meanBpm: mean(good),
     validCount: good.length,
     dropoutCount,
   };

@@ -22,14 +22,14 @@ const num = (v: unknown): number | null =>
 
 const numOr = (v: unknown, fallback: number): number => num(v) ?? fallback;
 
-/** Convert snake_case keys to camelCase, one level deep plus nested intervals. */
 function camelizeKey(key: string): string {
   return key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
 }
 
 /**
  * The HTTP API returns snake_case; the persisted localStorage blob returns
- * camelCase. Normalize both to camelCase so one code path handles either source.
+ * camelCase. Normalize both to camelCase so one code path handles either source:
+ * the record's own keys, and each interval's.
  */
 export function camelizeWorkout(raw: Record<string, unknown>): RawWorkout {
   const out: Record<string, unknown> = {};

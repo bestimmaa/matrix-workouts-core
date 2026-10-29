@@ -212,9 +212,6 @@ detail, including the four fields the API sends that the cache does not.
 
 ---
 
-
----
-
 ## Data model
 
 ### Workout record
@@ -493,9 +490,6 @@ resistance as the driver of output is wrong there. Read the series, not the habi
 
 ---
 
-
----
-
 ## The export format
 
 The platform offers no export of any kind. The record is otherwise reachable only by
@@ -661,9 +655,6 @@ encoder is hand-written because the package takes no runtime dependencies.
   and `fitFilename` carries the workout id, so the upload is named by its start
   time instead. A test checks every fixture for this. The HTTP request, the OAuth
   sign-in and the status polling belong to the consumer that makes them.
-
----
-
 
 ---
 
@@ -850,9 +841,6 @@ other test would notice:
   nothing.
 - `src/export/contract.test.ts` pins the exported key set and its nullability — see
   "The export format". It is the only test that fails on a rename.
-
----
-
 
 ---
 
