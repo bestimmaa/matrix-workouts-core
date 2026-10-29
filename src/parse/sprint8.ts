@@ -22,7 +22,7 @@ import { SAMPLE_INTERVAL_SECONDS } from "./workout.js";
  * two rides, so nothing in the record separates them.
  *
  * **It refuses rather than assumes.** A Sprint 8 abandoned at eight minutes must not
- * come back with eight windows, six of them invented. So the ride has to be the full
+ * come back with eight windows, five of them invented. So the ride has to be the full
  * 1200 s with a series that covers it, and every sprint window has to show the spike —
  * all its samples above everything in the stretch that follows it. Anything else is
  * `null`.
@@ -54,7 +54,7 @@ export interface Sprint8Segments {
   sprints: Sprint8Sprint[];
   /** The seven recoveries between the sprints. */
   recoveries: Sprint8Phase[];
-  /** Everything after sprint 8. */
+  /** Everything after sprint 8, to the record's duration. */
   coolDown: Sprint8Phase;
 }
 
@@ -68,66 +68,67 @@ const PROTOCOL = {
 } as const;
 
 export function sprint8Segments(workout: Workout): Sprint8Segments | null {
+  // The scores, not the program id: their presence is what marks a Sprint 8 ride
+  // (AGENTS.md, "Program modes").
   const scores = workout.sprint8?.scores;
-  if (workout.mode !== "sprint_8" || scores?.length !== PROTOCOL.sprints) return null;
-  if (workout.durationSeconds !== PROTOCOL.durationSeconds) return null;
+  if (scores?.length !== PROTOCOL.sprints) return null;
+  // At least the whole protocol: the record's own duration can run a few seconds past
+  // the series, so an exact 1200 would turn away a complete ride.
+  if (workout.durationSeconds < PROTOCOL.durationSeconds) return null;
 
   const samples = workout.samples;
   const last = samples[samples.length - 1];
   if (!last || last.elapsedSeconds < PROTOCOL.durationSeconds - SAMPLE_INTERVAL_SECONDS) return null;
 
-  const phase = (
-    startSeconds: number,
-    endSeconds: number,
-    endIndex = indexAt(samples, endSeconds),
-  ): Sprint8Phase => {
-    const startIndex = indexAt(samples, startSeconds);
-    const span = samples.slice(startIndex, endIndex);
-    return {
-      startIndex,
-      endIndex,
-      startSeconds,
-      endSeconds,
-      meanPowerWatts: mean(span.map((s) => s.powerWatts)),
-      maxPowerWatts: Math.max(0, ...span.map((s) => s.powerWatts)),
-      meanCadenceRpm: mean(span.map((s) => s.cadenceRpm)),
-    };
-  };
-
   const sprintStart = (i: number) => PROTOCOL.warmUpSeconds + i * PROTOCOL.periodSeconds;
   const sprintEnd = (i: number) => sprintStart(i) + PROTOCOL.sprintSeconds;
-
-  const sprints = scores.map((score, i): Sprint8Sprint => {
-    const span = phase(sprintStart(i), sprintEnd(i));
-    return {
-      ...span,
-      sprint: i + 1,
-      score,
-      finalCadenceRpm: samples[span.endIndex - 1]?.cadenceRpm ?? 0,
-    };
+  const spanOf = (startSeconds: number, endSeconds: number, endIndex = indexAt(samples, endSeconds)): Span => ({
+    startIndex: indexAt(samples, startSeconds),
+    endIndex,
+    startSeconds,
+    endSeconds,
   });
-  const recoveries = sprints.slice(0, -1).map((_, i) => phase(sprintEnd(i), sprintStart(i + 1)));
+
+  const sprintSpans = scores.map((_, i) => spanOf(sprintStart(i), sprintEnd(i)));
+  const recoverySpans = sprintSpans.slice(0, -1).map((_, i) => spanOf(sprintEnd(i), sprintStart(i + 1)));
   // To the end of the series: the record's final sample is a partial stamped at the
   // ride's last second, and it belongs to the cool-down too.
-  const coolDown = phase(sprintEnd(PROTOCOL.sprints - 1), PROTOCOL.durationSeconds, samples.length);
+  const coolDownSpan = spanOf(sprintEnd(PROTOCOL.sprints - 1), workout.durationSeconds, samples.length);
 
+  // Validate on indices first, so a refused ride costs no statistics.
   const samplesPerSprint = PROTOCOL.sprintSeconds / SAMPLE_INTERVAL_SECONDS;
-  const following = [...recoveries, coolDown];
-  const spiked = sprints.every((sprint, i) => {
+  const following = [...recoverySpans, coolDownSpan];
+  const spiked = sprintSpans.every((sprint, i) => {
     if (sprint.endIndex - sprint.startIndex !== samplesPerSprint) return false;
-    const after = following[i]!;
     const floor = Math.min(...resistance(samples, sprint));
-    return floor > Math.max(...resistance(samples, after));
+    return floor > Math.max(...resistance(samples, following[i]!));
   });
   if (!spiked) return null;
 
+  const phase = (span: Span): Sprint8Phase => {
+    const slice = samples.slice(span.startIndex, span.endIndex);
+    return {
+      ...span,
+      meanPowerWatts: mean(slice.map((s) => s.powerWatts)),
+      maxPowerWatts: Math.max(0, ...slice.map((s) => s.powerWatts)),
+      meanCadenceRpm: mean(slice.map((s) => s.cadenceRpm)),
+    };
+  };
+
   return {
-    warmUp: phase(0, PROTOCOL.warmUpSeconds),
-    sprints,
-    recoveries,
-    coolDown,
+    warmUp: phase(spanOf(0, PROTOCOL.warmUpSeconds)),
+    sprints: sprintSpans.map((span, i) => ({
+      ...phase(span),
+      sprint: i + 1,
+      score: scores[i]!,
+      finalCadenceRpm: samples[span.endIndex - 1]!.cadenceRpm,
+    })),
+    recoveries: recoverySpans.map(phase),
+    coolDown: phase(coolDownSpan),
   };
 }
+
+type Span = Pick<Sprint8Phase, "startIndex" | "endIndex" | "startSeconds" | "endSeconds">;
 
 /** The first sample at or after `seconds`; the series length when there is none. */
 function indexAt(samples: readonly Sample[], seconds: number): number {
@@ -135,6 +136,6 @@ function indexAt(samples: readonly Sample[], seconds: number): number {
   return i === -1 ? samples.length : i;
 }
 
-function resistance(samples: readonly Sample[], phase: Sprint8Phase): number[] {
-  return samples.slice(phase.startIndex, phase.endIndex).map((s) => s.resistanceLevel);
+function resistance(samples: readonly Sample[], span: Span): number[] {
+  return samples.slice(span.startIndex, span.endIndex).map((s) => s.resistanceLevel);
 }

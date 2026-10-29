@@ -78,6 +78,18 @@ describe("sprint8Segments", () => {
     expect(sprint8Segments(toWorkout(cut))).toBeNull();
   });
 
+  it("lays out a full ride whose record runs a few seconds past the series", () => {
+    const record = raw("6a95b033c23a154beb856bce");
+    const segments = sprint8Segments(toWorkout({ ...record, duration: 1203 }));
+    expect(segments?.sprints).toHaveLength(8);
+    expect(segments?.coolDown.endSeconds).toBe(1203);
+  });
+
+  it("reads Sprint 8 off the scores, not the program id", () => {
+    const record = raw("6aa2d8a88d2b6d09c62953f0");
+    expect(sprint8Segments(toWorkout({ ...record, programType: undefined }))?.sprints).toHaveLength(8);
+  });
+
   it("refuses a full-length record whose series stops early", () => {
     const record = raw("6a95b033c23a154beb856bce");
     const intervals = (record.intervals as RawInterval[]).slice(0, 100);
