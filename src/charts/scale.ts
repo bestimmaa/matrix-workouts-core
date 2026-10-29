@@ -25,16 +25,11 @@ export function linearScale(
     d1 += pad;
   }
   const [r0, r1] = range;
-  const scale = ((value: number) => r0 + ((value - d0) / (d1 - d0)) * (r1 - r0)) as {
-    (value: number): number;
-    domain: readonly [number, number];
-    range: readonly [number, number];
-    invert(pixel: number): number;
-  };
-  scale.domain = [d0, d1];
-  scale.range = [r0, r1];
-  scale.invert = (pixel: number) => d0 + ((pixel - r0) / (r1 - r0)) * (d1 - d0);
-  return scale;
+  return Object.assign((value: number) => r0 + ((value - d0) / (d1 - d0)) * (r1 - r0), {
+    domain: [d0, d1] as const,
+    range: [r0, r1] as const,
+    invert: (pixel: number) => d0 + ((pixel - r0) / (r1 - r0)) * (d1 - d0),
+  });
 }
 
 /** The 1/2/5 x 10^n step nearest to `count` divisions of the span. */

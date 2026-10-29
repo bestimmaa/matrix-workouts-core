@@ -68,10 +68,6 @@ function summarize(values: readonly (number | null)[]) {
   return { min: Math.min(...good), max: Math.max(...good), mean: sum / good.length, count: good.length };
 }
 
-function fmt(value: number, precision: number): string {
-  return value.toFixed(precision);
-}
-
 export function buildPanel(
   spec: PanelSpec,
   x: LinearScale,
@@ -80,13 +76,11 @@ export function buildPanel(
   const stats = summarize(spec.values);
   const precision = spec.precision ?? 0;
 
-  const domain = niceDomain(stats.min, stats.max, 3, {
-    ...(spec.zeroBaseline ? { zero: true } : {}),
-    ...(spec.integerTicks ? { integer: true } : {}),
-  });
+  const integer = spec.integerTicks ?? false;
+  const domain = niceDomain(stats.min, stats.max, 3, { zero: spec.zeroBaseline, integer });
   const y = linearScale(domain, [PLOT_BOTTOM, LAYOUT.plotTop]);
 
-  const yTicks = ticks(domain[0], domain[1], 3, spec.integerTicks ? { integer: true } : {}).map(
+  const yTicks = ticks(domain[0], domain[1], 3, { integer }).map(
     (value) => ({ value, y: y(value), label: String(value) }),
   );
 
@@ -107,7 +101,7 @@ export function buildPanel(
     areaPath: spec.fill ? areaPath(vertices, y(domain[0])) : null,
     stats,
     summary: stats.count
-      ? `${fmt(stats.min, precision)}–${fmt(stats.max, precision)} ${spec.shortUnit} · avg ${fmt(stats.mean, precision)}`
+      ? `${stats.min.toFixed(precision)}–${stats.max.toFixed(precision)} ${spec.shortUnit} · avg ${stats.mean.toFixed(precision)}`
       : "no data",
     ariaLabel:
       `${spec.label} in ${spec.unit} over ${minutes} minutes, ` +

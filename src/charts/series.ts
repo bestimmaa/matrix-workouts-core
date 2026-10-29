@@ -33,17 +33,23 @@ function runs(vertices: Vertices): Vertex[][] {
   return out;
 }
 
-/** Straight-segment line. No smoothing anywhere in this project. */
-export function linePath(vertices: Vertices): string {
+/**
+ * One subpath per run: a move to its first vertex, then `segment` to each of the
+ * rest. A lone sample still needs a visible mark; a zero-length segment with a
+ * round linecap draws as a dot.
+ */
+function subpaths(vertices: Vertices, segment: (v: Vertex) => string): string {
   return runs(vertices)
-    .map((run) => {
-      const head = run[0]!;
-      // A lone sample still needs a visible mark; a zero-length segment with a
-      // round linecap draws as a dot.
-      if (run.length === 1) return `M${n(head.x)} ${n(head.y)}L${n(head.x)} ${n(head.y)}`;
-      return `M${n(head.x)} ${n(head.y)}` + run.slice(1).map((v) => `L${n(v.x)} ${n(v.y)}`).join("");
+    .map(([head, ...rest]) => {
+      const move = `M${n(head!.x)} ${n(head!.y)}`;
+      return rest.length ? move + rest.map(segment).join("") : `${move}L${n(head!.x)} ${n(head!.y)}`;
     })
     .join(" ");
+}
+
+/** Straight-segment line. No smoothing anywhere in this project. */
+export function linePath(vertices: Vertices): string {
+  return subpaths(vertices, (v) => `L${n(v.x)} ${n(v.y)}`);
 }
 
 /**
@@ -54,16 +60,7 @@ export function linePath(vertices: Vertices): string {
  * draws a ramp the machine never performed.
  */
 export function stepPath(vertices: Vertices): string {
-  return runs(vertices)
-    .map((run) => {
-      const head = run[0]!;
-      if (run.length === 1) return `M${n(head.x)} ${n(head.y)}L${n(head.x)} ${n(head.y)}`;
-      return (
-        `M${n(head.x)} ${n(head.y)}` +
-        run.slice(1).map((v) => `H${n(v.x)}V${n(v.y)}`).join("")
-      );
-    })
-    .join(" ");
+  return subpaths(vertices, (v) => `H${n(v.x)}V${n(v.y)}`);
 }
 
 /** Filled area between the line and `baseline` (a y in viewBox units). */
