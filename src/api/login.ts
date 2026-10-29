@@ -1,5 +1,6 @@
-import { API_ORIGIN, ApiError, type FetchLike } from "./client.js";
-import { redact, type Credentials } from "./credentials.js";
+import { API_ORIGIN, type FetchLike } from "./client.js";
+import type { Credentials } from "./credentials.js";
+import { ApiError, requestJson } from "./request.js";
 
 /**
  * Exchange an xid and passcode for a bearer token.
@@ -58,32 +59,16 @@ export async function loginWithXid(login: XidLogin, fetchImpl: FetchLike): Promi
     club_id: login.clubId ?? 0,
   });
 
-  let response: Awaited<ReturnType<FetchLike>>;
-  try {
-    response = await fetchImpl(loginUrl(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body,
-    });
-  } catch (error) {
-    // The message can quote the request, and the request is the passcode.
-    const detail = error instanceof Error ? redact(error.message, login.pin) : "";
-    throw new ApiError(`Could not reach the sign-in API. ${detail}`.trim(), 0);
-  }
-
-  if (!response.ok) {
-    throw new ApiError(describeLoginStatus(response.status), response.status);
-  }
-
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new ApiError("The sign-in API returned something that is not JSON.", response.status);
-  }
+  const { status, body: payload } = await requestJson(
+    fetchImpl,
+    loginUrl(),
+    { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body },
+    // A transport error's message can quote the request, and the request is the passcode.
+    { secret: login.pin, what: "sign-in", describeStatus: describeLoginStatus },
+  );
 
   if (typeof payload !== "object" || payload === null) {
-    throw new ApiError("The sign-in API returned no profile.", response.status);
+    throw new ApiError("The sign-in API returned no profile.", status);
   }
 
   // Observed live: `id` and `token` sit at the top level of the login response,
@@ -93,10 +78,10 @@ export async function loginWithXid(login: XidLogin, fetchImpl: FetchLike): Promi
   const exerciserId = str(record["id"]);
 
   if (!token) {
-    throw new ApiError("Signed in, but the API returned no token.", response.status);
+    throw new ApiError("Signed in, but the API returned no token.", status);
   }
   if (!exerciserId) {
-    throw new ApiError("Signed in, but the API returned no exerciser id.", response.status);
+    throw new ApiError("Signed in, but the API returned no exerciser id.", status);
   }
 
   return { exerciserId, token };

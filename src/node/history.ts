@@ -14,16 +14,14 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 import {
-  ApiError,
-  fetchWorkoutHistory,
   parseHistoryResponse,
   workoutsUrl,
   type Credentials,
   type FetchLike,
   type HistoryResult,
 } from "../api/index.js";
-import { exportFilename, workoutExport } from "../export/index.js";
-import { toWorkout } from "../parse/index.js";
+import { fetchHistoryBody } from "../api/request.js";
+import { exportFilename, workoutExportJson } from "../export/index.js";
 
 /**
  * `FetchLike` over the real thing.
@@ -74,14 +72,8 @@ export function loadEnvFile(path: string): void {
  * `source.record`: this API is undocumented and its shape has already changed once.
  * A normalized-only download would quietly become the smaller of the two records.
  */
-export async function fetchRawHistory(credentials: Credentials): Promise<unknown> {
-  const response = await fetch(workoutsUrl(credentials.exerciserId), {
-    headers: { Authorization: `Bearer ${credentials.token}`, Accept: "application/json" },
-  });
-  if (!response.ok) {
-    throw new ApiError(`History request failed (HTTP ${response.status}).`, response.status);
-  }
-  return response.json();
+export function fetchRawHistory(credentials: Credentials): Promise<unknown> {
+  return fetchHistoryBody(workoutsUrl(credentials.exerciserId), credentials, httpFetch);
 }
 
 export interface DownloadOptions {
@@ -105,9 +97,9 @@ export interface DownloadResult extends HistoryResult {
 /**
  * Sign-in is the caller's job; this downloads and writes.
  *
- * Both requests go out together because they are the same record twice — the
- * verbatim response for the archive, the normalized one for anything that has to
- * read it — and serializing them would double the wait for no gain.
+ * One request: the verbatim response is archived and parsed in place, through the
+ * same `parseHistoryResponse` a cached file is read with, so the archive and the
+ * returned workouts are the same record and cannot disagree.
  *
  * Files are written `0600`. They are one person's heart rate and there is no reason
  * for the rest of the machine to read them.
@@ -116,10 +108,8 @@ export async function downloadHistory(
   credentials: Credentials,
   options: DownloadOptions,
 ): Promise<DownloadResult> {
-  const [raw, parsed] = await Promise.all([
-    fetchRawHistory(credentials),
-    fetchWorkoutHistory(credentials, httpFetch),
-  ]);
+  const raw = await fetchRawHistory(credentials);
+  const parsed = parseHistoryResponse(raw);
 
   mkdirSync(options.outDir, { recursive: true });
 
@@ -129,18 +119,12 @@ export async function downloadHistory(
 
   const exportPaths: string[] = [];
   if (options.split) {
-    // The verbatim response already holds every record; these are the normalized
-    // documents, one per ride, in the format the extension's export button writes.
-    const records = (raw as { workouts?: Record<string, unknown>[] }).workouts ?? [];
-    for (const record of records) {
-      try {
-        const workout = toWorkout(record);
-        const path = resolve(options.outDir, exportFilename(workout));
-        writeFileSync(path, `${JSON.stringify(workoutExport(workout), null, 2)}\n`, { mode: 0o600 });
-        exportPaths.push(path);
-      } catch {
-        // Already counted in `skipped`; one bad record is not worth the run.
-      }
+    // One normalized document per ride, in the format the extension's export button
+    // writes. Records the parser could not read are already counted in `skipped`.
+    for (const workout of parsed.workouts) {
+      const path = resolve(options.outDir, exportFilename(workout));
+      writeFileSync(path, workoutExportJson(workout), { mode: 0o600 });
+      exportPaths.push(path);
     }
   }
 

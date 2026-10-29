@@ -1,4 +1,4 @@
-import { parsePersistSlice } from "../parse/persist.js";
+import { parsePersistSlice, PERSIST_KEY } from "../parse/persist.js";
 import { WorkoutParseError } from "../parse/types.js";
 import type { ReadableStorage } from "../parse/index.js";
 
@@ -27,7 +27,7 @@ function str(value: unknown): string | null {
  * lookup is tolerant in the same spirit as the rest of the parse layer.
  */
 export function readCredentials(storage: ReadableStorage): Credentials {
-  const userStore = parsePersistSlice(storage.getItem("root"), "userStore");
+  const userStore = parsePersistSlice(storage.getItem(PERSIST_KEY), "userStore");
   const profile = (userStore["exerciserProfile"] ?? {}) as Record<string, unknown>;
 
   const token = str(profile["token"]);
