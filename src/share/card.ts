@@ -1,7 +1,7 @@
 import { flagHeartRateDropouts } from "../parse/heartRate.js";
 import { describeBlocks, heldWatts, targetWattBlocks } from "../parse/blocks.js";
+import { PROGRAM_NAMES, reachedWatts } from "../parse/facts.js";
 import { mean } from "../parse/stats.js";
-import type { ProgramMode } from "../parse/program.js";
 import type { Sample, Workout } from "../parse/types.js";
 
 /**
@@ -94,15 +94,6 @@ export const SHARE_TARGET_COLUMNS = 45;
  * the 10 Sep Sprint 8 ride (about half) fall below it.
  */
 export const SHARE_MIN_HEART_RATE_COVERAGE = 0.6;
-
-const PROGRAM_NAMES: Readonly<Record<ProgramMode, string | null>> = {
-  target_watts: "Target watts",
-  sprint_8: "Sprint 8",
-  target_heart_rate: "Target heart rate",
-  fitness_test: "Fitness test",
-  virtual_active: "Virtual Active",
-  unknown: null,
-};
 
 export function shareCard(workout: Workout, options: ShareCardOptions = {}): ShareCard {
   const ride = measure(workout);
@@ -198,17 +189,13 @@ function targetHeartRateCard(ride: Ride): Body | null {
   };
 }
 
-/**
- * The number is the wattage of the stage the rider stopped in: the highest power in
- * the final minute. The console also shows a VO₂ estimate and the final stage, but
- * neither reaches the record, so neither can reach the card.
- */
+/** The number is the wattage of the stage the rider stopped in; see `reachedWatts`. */
 function fitnessTestCard(ride: Ride): Body | null {
-  const lastMinute = ride.samples.filter((s) => s.elapsedSeconds >= ride.lastSeconds - 60);
-  if (lastMinute.length === 0) return null;
+  const watts = reachedWatts(ride.samples);
+  if (watts === null) return null;
   return {
     line: `Reached in ${ride.minutes} min`,
-    hero: `${Math.max(...lastMinute.map(powerOf))}W`,
+    hero: `${watts}W`,
     grid: bars(ride, powerOf, ride.topWatts, () => true),
     gridLabels: [],
     strip: heartRateStrip(ride),
@@ -250,7 +237,6 @@ interface Ride {
   /** Samples per column; the last column may hold fewer. */
   perColumn: number;
   minutes: number;
-  lastSeconds: number;
   durationSeconds: number;
   km: string;
   calories: number | null;
@@ -284,7 +270,6 @@ function measure(workout: Workout): Ride {
     columns,
     perColumn: per,
     minutes: Math.round(workout.durationSeconds / 60),
-    lastSeconds: samples[samples.length - 1]?.elapsedSeconds ?? 0,
     durationSeconds: workout.durationSeconds,
     km: (workout.distanceMeters / 1000).toFixed(1),
     calories: workout.calories,
