@@ -6,6 +6,7 @@ export * from "./workout.js";
 export * from "./heartRate.js";
 export * from "./controlSignature.js";
 export * from "./blocks.js";
+export * from "./sprint8.js";
 
 import { extractRawWorkouts, PERSIST_KEY } from "./persist.js";
 import { toWorkout } from "./workout.js";

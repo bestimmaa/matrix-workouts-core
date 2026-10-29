@@ -402,6 +402,20 @@ numbers are in `src/parse/blocks.ts`, and `npm test` pins every one.
 To close 0: ride it once and read the mode off the console, then add a row to the
 training log so the ride can be matched.
 
+### The Sprint 8 layout is the protocol's, not the series'
+
+The record carries the eight scores and no phase field, so `sprint8Segments` lays
+them onto the console's fixed protocol rather than reading phases out of the series:
+both Sprint 8 fixtures sprint on the same seconds at different resistances, so
+**level moves resistance, not timing**. It refuses a ride it cannot confirm rather
+than invent the missing windows. The layout, the evidence and the refusal rules are
+in `src/parse/sprint8.ts`.
+
+**Do not extend this to Target HR (46).** Its opening ramp is the loop chasing a
+target from a cold heart rate, not a scripted phase, and nothing recorded marks a
+warm-up or cool-down — deriving them would be inventing, the same reason 0 stays
+unmapped.
+
 ### Prefer the derived control signature over the program id
 
 Because the ids are only partly decoded, `controlSignature(samples)` reads how the

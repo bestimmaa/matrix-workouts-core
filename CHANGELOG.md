@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+### Added
+
+- **`sprint8Segments(workout)`**: a Sprint 8 ride's warm-up, eight sprints, seven
+  recoveries and cool-down, each sprint joined to the console's score for it, with
+  mean and max power and cadence per phase. The windows come from the console's
+  fixed protocol; a ride cut short, or one whose windows show no resistance spike,
+  gets `null` rather than invented sprints.
+
+### Fixed
+
+- `downloadHistory` sent the same history request twice in parallel, one for the
+  archive and one to parse, so the two could disagree. It now makes one request and
+  parses that body.
+- `fetchRawHistory` called `fetch` directly, skipping the client's token redaction
+  on a transport error and its error messages on a non-ok status.
+- With `--split`, a failed file write was swallowed by the `catch` meant for
+  unreadable records.
+
 ## [0.4.0] - 2026-10-28
 
 ### Added
