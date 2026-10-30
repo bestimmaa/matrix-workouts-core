@@ -13,6 +13,8 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   mean and max power and cadence per phase. The windows come from the console's
   fixed protocol; a ride cut short, or one whose windows show no resistance spike,
   gets `null` rather than invented sprints.
+- `SPRINT8_SPRINT_WINDOWS`: the eight sprint windows on the protocol clock, the one
+  copy of the timing that `sprint8Segments` and the share card both read.
 
 ### Fixed
 

@@ -67,6 +67,20 @@ const PROTOCOL = {
   sprints: 8,
 } as const;
 
+/**
+ * The eight sprint windows on the protocol clock, `[startSeconds, endSeconds)`: sprint
+ * i runs from 180 + 120·i s for 30 s. The one copy of the timing, shared with the
+ * share card, which lights these columns whether or not the ride passes the checks
+ * below.
+ */
+export const SPRINT8_SPRINT_WINDOWS: readonly { startSeconds: number; endSeconds: number }[] = Array.from(
+  { length: PROTOCOL.sprints },
+  (_, i) => {
+    const startSeconds = PROTOCOL.warmUpSeconds + i * PROTOCOL.periodSeconds;
+    return { startSeconds, endSeconds: startSeconds + PROTOCOL.sprintSeconds };
+  },
+);
+
 export function sprint8Segments(workout: Workout): Sprint8Segments | null {
   // The scores, not the program id: their presence is what marks a Sprint 8 ride
   // (AGENTS.md, "Program modes").
@@ -80,8 +94,6 @@ export function sprint8Segments(workout: Workout): Sprint8Segments | null {
   const last = samples[samples.length - 1];
   if (!last || last.elapsedSeconds < PROTOCOL.durationSeconds - SAMPLE_INTERVAL_SECONDS) return null;
 
-  const sprintStart = (i: number) => PROTOCOL.warmUpSeconds + i * PROTOCOL.periodSeconds;
-  const sprintEnd = (i: number) => sprintStart(i) + PROTOCOL.sprintSeconds;
   const spanOf = (startSeconds: number, endSeconds: number, endIndex = indexAt(samples, endSeconds)): Span => ({
     startIndex: indexAt(samples, startSeconds),
     endIndex,
@@ -89,11 +101,12 @@ export function sprint8Segments(workout: Workout): Sprint8Segments | null {
     endSeconds,
   });
 
-  const sprintSpans = scores.map((_, i) => spanOf(sprintStart(i), sprintEnd(i)));
-  const recoverySpans = sprintSpans.slice(0, -1).map((_, i) => spanOf(sprintEnd(i), sprintStart(i + 1)));
+  const windows = SPRINT8_SPRINT_WINDOWS;
+  const sprintSpans = windows.map((w) => spanOf(w.startSeconds, w.endSeconds));
+  const recoverySpans = windows.slice(0, -1).map((w, i) => spanOf(w.endSeconds, windows[i + 1]!.startSeconds));
   // To the end of the series: the record's final sample is a partial stamped at the
   // ride's last second, and it belongs to the cool-down too.
-  const coolDownSpan = spanOf(sprintEnd(PROTOCOL.sprints - 1), workout.durationSeconds, samples.length);
+  const coolDownSpan = spanOf(windows[windows.length - 1]!.endSeconds, workout.durationSeconds, samples.length);
 
   // Validate on indices first, so a refused ride costs no statistics.
   const samplesPerSprint = PROTOCOL.sprintSeconds / SAMPLE_INTERVAL_SECONDS;
