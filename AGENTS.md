@@ -843,7 +843,7 @@ recomputed as `index * 10`; dropouts flagged without the console's reading being
 erased; both heart-rate summaries present; and `source.record` equal to the fixture
 it came from, in the shape it came in. Add the assertion when you add the rule.
 
-Two tests assert **structure rather than behaviour**, and both fail on a change no
+Three tests assert **structure rather than behaviour**, and each fails on a change no
 other test would notice:
 
 - `src/layers.test.ts` parses every source file with the TypeScript compiler and
@@ -855,6 +855,9 @@ other test would notice:
   nothing.
 - `src/export/contract.test.ts` pins the exported key set and its nullability — see
   "The export format". It is the only test that fails on a rename.
+- `src/docs.test.ts` checks the docs against the package: every entry point and
+  command the README names, every export its table lists, and every `src/….ts` path
+  any of the three docs mentions. Prose it cannot check; paths and identifiers it can.
 
 ---
 
