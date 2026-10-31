@@ -1,7 +1,7 @@
 # MATRIX_API.md — the jfit HTTP API
 
 Reference for the undocumented API behind `matrixworkouts.jfit.co` (Matrix / Johnson
-Fitness). Written while building the standalone client in `src/cli/history.ts`.
+Fitness). Written while building the standalone client in `src/node/bin/history.ts`.
 
 **Everything here was read out of the site's own JavaScript bundle or confirmed
 against the live API on 14 Sep 2026.** Each endpoint below is marked *verified* (a
@@ -244,6 +244,6 @@ cp .env.example .env    # fill in MATRIX_XID and MATRIX_PIN
 npm run history         # full history -> history/
 ```
 
-See `src/cli/history.ts`. Credentials live in `.env` (gitignored), are used for the
+See `src/node/bin/history.ts`. Credentials live in `.env` (gitignored), are used for the
 single sign-in request, and are never written to output or logged. The `history/`
 directory is gitignored: those files are the rider's resting heart rate.

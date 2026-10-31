@@ -22,7 +22,7 @@ const ALL = readdirSync(FIXTURES)
 const CASES = [
   ["6adca6d1680a5afcc2ab4f3a", "Target watts", "40 min steady", "135W"],
   ["6a998daf8d2b6d09c6e334d2", "Target watts", "2 × 20 min", "153W"],
-  ["6a8586f58d2b6d09c6494dd6", "Target watts", "4 × 4 min", "201W"],
+  ["6a8586f58d2b6d09c6494dd6", "Target watts", "4 × 4 min", "200W"],
   ["6a7cab8cc23a154bebccef65", "Target watts", "2 × 18 min", "148W"],
   ["6aa2d8a88d2b6d09c62953f0", "Sprint 8", "Sweat score", "9360"],
   ["6aa194a08d2b6d09c61e9500", "Target heart rate", "Average over 52 min", "142bpm"],

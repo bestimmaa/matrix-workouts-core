@@ -1,5 +1,5 @@
 import { describeBlocks, heldWatts, targetWattBlocks } from "../parse/blocks.js";
-import type { ProgramMode } from "../parse/program.js";
+import { PROGRAM_NAMES, reachedWatts } from "../parse/facts.js";
 import type { Workout } from "../parse/types.js";
 
 /**
@@ -15,23 +15,13 @@ import type { Workout } from "../parse/types.js";
  * the minutes. Program 0 has no name, so it is an "Indoor ride", not a guess at one.
  */
 
-const PROGRAM_TITLES: Readonly<Record<ProgramMode, string>> = {
-  target_watts: "Target watts",
-  sprint_8: "Sprint 8",
-  target_heart_rate: "Target heart rate",
-  fitness_test: "Fitness test",
-  virtual_active: "Virtual Active",
-  hills: "Hills",
-  unknown: "Indoor ride",
-};
-
 export function workoutTitle(workout: Workout): string {
-  const program = PROGRAM_TITLES[workout.mode];
-  const fact = programFact(workout) ?? `${Math.round(workout.durationSeconds / 60)} min`;
-  return `${program} · ${fact}`;
+  const program = PROGRAM_NAMES[workout.mode] ?? "Indoor ride";
+  const minutes = `${Math.round(workout.durationSeconds / 60)} min`;
+  return `${program} · ${programFact(workout, minutes) ?? minutes}`;
 }
 
-function programFact(workout: Workout): string | null {
+function programFact(workout: Workout, minutes: string): string | null {
   switch (workout.mode) {
     case "target_watts": {
       const blocks = targetWattBlocks(workout);
@@ -42,15 +32,11 @@ function programFact(workout: Workout): string | null {
     case "target_heart_rate": {
       // The console's reported average, the same figure the share card shows.
       const bpm = workout.reported.averageHeartRateBpm;
-      const minutes = `${Math.round(workout.durationSeconds / 60)} min`;
       return bpm ? `${minutes} @ ${Math.round(bpm)} bpm` : null;
     }
     case "fitness_test": {
-      // The stage the rider stopped in: the highest power in the final minute.
-      const last = workout.samples.at(-1);
-      if (!last) return null;
-      const final = workout.samples.filter((s) => s.elapsedSeconds >= last.elapsedSeconds - 60);
-      return `reached ${Math.max(...final.map((s) => Math.round(s.powerWatts)))} W`;
+      const watts = reachedWatts(workout.samples);
+      return watts === null ? null : `reached ${watts} W`;
     }
     case "virtual_active":
       return `${(workout.distanceMeters / 1000).toFixed(1)} km`;

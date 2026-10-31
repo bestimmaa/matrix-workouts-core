@@ -70,13 +70,13 @@ const CHANNELS: readonly ChannelDef[] = [
 ];
 
 /** Priority order per control mode. Channels not listed keep their catalogue order. */
-const ORDERS: Record<string, readonly ChannelId[]> = {
+const ORDERS = {
   sprint_8: ["power", "cadence", "heartRate", "resistance"],
   power_controlled: ["power", "heartRate", "cadence", "resistance"],
   target_watts: ["power", "heartRate", "cadence", "resistance"],
   target_heart_rate: ["heartRate", "power", "resistance", "cadence"],
   default: ["power", "resistance", "cadence", "heartRate"],
-};
+} as const satisfies Record<string, readonly ChannelId[]>;
 
 export interface WorkoutPlan {
   panels: PanelSpec[];
@@ -88,7 +88,7 @@ export interface WorkoutPlan {
   heartRateDropouts: number;
 }
 
-function orderKey(workout: Workout, control: ControlSignature): { key: string; reason: string } {
+function orderKey(workout: Workout, control: ControlSignature): { key: keyof typeof ORDERS; reason: string } {
   if (workout.sprint8) {
     return { key: "sprint_8", reason: "Sprint 8 ride — eight discrete efforts" };
   }
@@ -117,23 +117,24 @@ export function planWorkout(workout: Workout): WorkoutPlan {
   const valid = flagHeartRateDropouts(samples);
   const dropouts = valid.filter((ok) => !ok).length;
 
-  const records = (id: ChannelId): boolean => {
-    const channel = CHANNELS.find((c) => c.id === id)!;
-    return samples.some((s) => channel.read(s) !== 0);
-  };
+  // A channel that never leaves zero is not recorded on this machine type.
+  const recorded = new Map<ChannelId, number[]>();
+  for (const channel of CHANNELS) {
+    const raw = samples.map(channel.read);
+    if (raw.some((v) => v !== 0)) recorded.set(channel.id, raw);
+  }
 
   const available: PanelSpec[] = [];
   for (const channel of CHANNELS) {
-    const raw = samples.map(channel.read);
-    // A channel that never leaves zero is not recorded on this machine type.
-    if (!raw.some((v) => v !== 0)) continue;
+    const raw = recorded.get(channel.id);
+    if (!raw) continue;
 
     // Speed and incline are stand-ins for machines that report no power or no
     // resistance. On a bike, speed is the console's own function of power and
     // cadence, so plotting it adds a panel that says nothing new — and it would
     // have to borrow power's palette slot to do it.
-    if (channel.id === "speed" && records("power")) continue;
-    if (channel.id === "incline" && records("resistance")) continue;
+    if (channel.id === "speed" && recorded.has("power")) continue;
+    if (channel.id === "incline" && recorded.has("resistance")) continue;
 
     if (channel.id === "heartRate") {
       const masked = raw.map((v, i) => (valid[i] ? v : null));
@@ -153,7 +154,7 @@ export function planWorkout(workout: Workout): WorkoutPlan {
   }
 
   const { key, reason } = orderKey(workout, control);
-  const order = ORDERS[key] ?? ORDERS["default"]!;
+  const order: readonly ChannelId[] = ORDERS[key];
   const rank = (spec: PanelSpec) => {
     const index = order.indexOf(spec.key as ChannelId);
     return index === -1 ? order.length + CHANNELS.findIndex((c) => c.id === spec.key) : index;

@@ -1,0 +1,154 @@
+import { mean } from "./stats.js";
+import type { Sample, Workout } from "./types.js";
+import { SAMPLE_INTERVAL_SECONDS } from "./workout.js";
+
+/**
+ * The Sprint 8 phase layout: where each of the eight sprints sat in the ride, joined
+ * to the score the console gave it.
+ *
+ * The record carries the eight scores and nothing to say when any of them happened —
+ * no phase field, no segment list. The console enforces a fixed protocol and does not
+ * write it down, so the layout comes from the protocol, not from the series:
+ *
+ *   0:00–3:00     warm-up
+ *   3:00–17:30    8 × (30 s sprint, 90 s recovery); sprint i starts at 180 + 120·i s
+ *   17:30–20:00   cool-down
+ *
+ * Matrix states the fixed part (eight 30-second sprints in a 20-minute workout). Both
+ * Sprint 8 fixtures pin the rest: 1200 s and 121 samples each, the sprints on the same
+ * second boundaries at different levels (resistance 20→23 and 21→24) — level changes
+ * the resistance, not the timing. What follows sprint 8 is one cool-down here: the
+ * console's last recovery and its cool-down sit at the same resistance on one of the
+ * two rides, so nothing in the record separates them.
+ *
+ * **It refuses rather than assumes.** A Sprint 8 abandoned at eight minutes must not
+ * come back with eight windows, five of them invented. So the ride has to be the full
+ * 1200 s with a series that covers it, and every sprint window has to show the spike —
+ * all its samples above everything in the stretch that follows it. Anything else is
+ * `null`.
+ */
+export interface Sprint8Phase {
+  /** First sample of the phase. */
+  startIndex: number;
+  /** One past the last sample of the phase. */
+  endIndex: number;
+  startSeconds: number;
+  endSeconds: number;
+  meanPowerWatts: number;
+  maxPowerWatts: number;
+  meanCadenceRpm: number;
+}
+
+export interface Sprint8Sprint extends Sprint8Phase {
+  /** 1 through 8. */
+  sprint: number;
+  /** The console's score for this sprint, from `sprint8.scores`. */
+  score: number;
+  /** Cadence on the window's last sample: whether the sprint held to the end. */
+  finalCadenceRpm: number;
+}
+
+export interface Sprint8Segments {
+  warmUp: Sprint8Phase;
+  /** Exactly eight, in order. */
+  sprints: Sprint8Sprint[];
+  /** The seven recoveries between the sprints. */
+  recoveries: Sprint8Phase[];
+  /** Everything after sprint 8, to the record's duration. */
+  coolDown: Sprint8Phase;
+}
+
+const PROTOCOL = {
+  durationSeconds: 1200,
+  warmUpSeconds: 180,
+  sprintSeconds: 30,
+  /** Sprint start to sprint start: 30 s on, 90 s recovery. */
+  periodSeconds: 120,
+  sprints: 8,
+} as const;
+
+/**
+ * The eight sprint windows on the protocol clock, `[startSeconds, endSeconds)`: sprint
+ * i runs from 180 + 120·i s for 30 s. The one copy of the timing, shared with the
+ * share card, which lights these columns whether or not the ride passes the checks
+ * below.
+ */
+export const SPRINT8_SPRINT_WINDOWS: readonly { startSeconds: number; endSeconds: number }[] = Array.from(
+  { length: PROTOCOL.sprints },
+  (_, i) => {
+    const startSeconds = PROTOCOL.warmUpSeconds + i * PROTOCOL.periodSeconds;
+    return { startSeconds, endSeconds: startSeconds + PROTOCOL.sprintSeconds };
+  },
+);
+
+export function sprint8Segments(workout: Workout): Sprint8Segments | null {
+  // The scores, not the program id: their presence is what marks a Sprint 8 ride
+  // (AGENTS.md, "Program modes").
+  const scores = workout.sprint8?.scores;
+  if (scores?.length !== PROTOCOL.sprints) return null;
+  // At least the whole protocol: the record's own duration can run a few seconds past
+  // the series, so an exact 1200 would turn away a complete ride.
+  if (workout.durationSeconds < PROTOCOL.durationSeconds) return null;
+
+  const samples = workout.samples;
+  const last = samples[samples.length - 1];
+  if (!last || last.elapsedSeconds < PROTOCOL.durationSeconds - SAMPLE_INTERVAL_SECONDS) return null;
+
+  const spanOf = (startSeconds: number, endSeconds: number, endIndex = indexAt(samples, endSeconds)): Span => ({
+    startIndex: indexAt(samples, startSeconds),
+    endIndex,
+    startSeconds,
+    endSeconds,
+  });
+
+  const windows = SPRINT8_SPRINT_WINDOWS;
+  const sprintSpans = windows.map((w) => spanOf(w.startSeconds, w.endSeconds));
+  const recoverySpans = windows.slice(0, -1).map((w, i) => spanOf(w.endSeconds, windows[i + 1]!.startSeconds));
+  // To the end of the series: the record's final sample is a partial stamped at the
+  // ride's last second, and it belongs to the cool-down too.
+  const coolDownSpan = spanOf(windows[windows.length - 1]!.endSeconds, workout.durationSeconds, samples.length);
+
+  // Validate on indices first, so a refused ride costs no statistics.
+  const samplesPerSprint = PROTOCOL.sprintSeconds / SAMPLE_INTERVAL_SECONDS;
+  const following = [...recoverySpans, coolDownSpan];
+  const spiked = sprintSpans.every((sprint, i) => {
+    if (sprint.endIndex - sprint.startIndex !== samplesPerSprint) return false;
+    const floor = Math.min(...resistance(samples, sprint));
+    return floor > Math.max(...resistance(samples, following[i]!));
+  });
+  if (!spiked) return null;
+
+  const phase = (span: Span): Sprint8Phase => {
+    const slice = samples.slice(span.startIndex, span.endIndex);
+    return {
+      ...span,
+      meanPowerWatts: mean(slice.map((s) => s.powerWatts)),
+      maxPowerWatts: Math.max(0, ...slice.map((s) => s.powerWatts)),
+      meanCadenceRpm: mean(slice.map((s) => s.cadenceRpm)),
+    };
+  };
+
+  return {
+    warmUp: phase(spanOf(0, PROTOCOL.warmUpSeconds)),
+    sprints: sprintSpans.map((span, i) => ({
+      ...phase(span),
+      sprint: i + 1,
+      score: scores[i]!,
+      finalCadenceRpm: samples[span.endIndex - 1]!.cadenceRpm,
+    })),
+    recoveries: recoverySpans.map(phase),
+    coolDown: phase(coolDownSpan),
+  };
+}
+
+type Span = Pick<Sprint8Phase, "startIndex" | "endIndex" | "startSeconds" | "endSeconds">;
+
+/** The first sample at or after `seconds`; the series length when there is none. */
+function indexAt(samples: readonly Sample[], seconds: number): number {
+  const i = samples.findIndex((s) => s.elapsedSeconds >= seconds);
+  return i === -1 ? samples.length : i;
+}
+
+function resistance(samples: readonly Sample[], span: Span): number[] {
+  return samples.slice(span.startIndex, span.endIndex).map((s) => s.resistanceLevel);
+}

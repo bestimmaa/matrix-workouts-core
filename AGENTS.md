@@ -212,9 +212,6 @@ detail, including the four fields the API sends that the cache does not.
 
 ---
 
-
----
-
 ## Data model
 
 ### Workout record
@@ -415,6 +412,20 @@ numbers are in `src/parse/blocks.ts`, and `npm test` pins every one.
 To close 0: ride it once and read the mode off the console, then add a row to the
 training log so the ride can be matched.
 
+### The Sprint 8 layout is the protocol's, not the series'
+
+The record carries the eight scores and no phase field, so `sprint8Segments` lays
+them onto the console's fixed protocol rather than reading phases out of the series:
+both Sprint 8 fixtures sprint on the same seconds at different resistances, so
+**level moves resistance, not timing**. It refuses a ride it cannot confirm rather
+than invent the missing windows. The layout, the evidence and the refusal rules are
+in `src/parse/sprint8.ts`.
+
+**Do not extend this to Target HR (46).** Its opening ramp is the loop chasing a
+target from a cold heart rate, not a scripted phase, and nothing recorded marks a
+warm-up or cool-down — deriving them would be inventing, the same reason 0 stays
+unmapped.
+
 ### Prefer the derived control signature over the program id
 
 Because the ids are only partly decoded, `controlSignature(samples)` reads how the
@@ -500,9 +511,6 @@ resistance as the driver of output is wrong there. Read the series, not the habi
   Short by 16.09 m on two fixtures, and by 160.94 m and 225.31 m (≈3 %) on two more.
   Neither figure reconciles perfectly. Carry the residual and say which number you are
   showing; do not scale the series to close the gap.
-
----
-
 
 ---
 
@@ -671,9 +679,6 @@ encoder is hand-written because the package takes no runtime dependencies.
   and `fitFilename` carries the workout id, so the upload is named by its start
   time instead. A test checks every fixture for this. The HTTP request, the OAuth
   sign-in and the status polling belong to the consumer that makes them.
-
----
-
 
 ---
 
@@ -849,7 +854,7 @@ recomputed as `index * 10`; dropouts flagged without the console's reading being
 erased; both heart-rate summaries present; and `source.record` equal to the fixture
 it came from, in the shape it came in. Add the assertion when you add the rule.
 
-Two tests assert **structure rather than behaviour**, and both fail on a change no
+Three tests assert **structure rather than behaviour**, and each fails on a change no
 other test would notice:
 
 - `src/layers.test.ts` parses every source file with the TypeScript compiler and
@@ -861,9 +866,9 @@ other test would notice:
   nothing.
 - `src/export/contract.test.ts` pins the exported key set and its nullability — see
   "The export format". It is the only test that fails on a rename.
-
----
-
+- `src/docs.test.ts` checks the docs against the package: every entry point and
+  command the README names, every export its table lists, and every `src/….ts` path
+  any of the three docs mentions. Prose it cannot check; paths and identifiers it can.
 
 ---
 
