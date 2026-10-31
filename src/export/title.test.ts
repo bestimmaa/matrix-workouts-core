@@ -23,7 +23,7 @@ const TITLES: [id: string, title: string][] = [
   ["6a6368cb18e8655524dbb05d", "Target heart rate · 63 min @ 135 bpm"],
   ["6a7cab8cc23a154bebccef65", "Target watts · 2 × 18 min @ 148 W"],
   ["6a8336b68d2b6d09c634fc60", "Virtual Active · 1.2 km"],
-  ["6a8586f58d2b6d09c6494dd6", "Target watts · 4 × 4 min @ 201 W"],
+  ["6a8586f58d2b6d09c6494dd6", "Target watts · 4 × 4 min @ 200 W"],
   ["6a9413328d2b6d09c6b512a9", "Indoor ride · 10 min"],
   ["6a95b033c23a154beb856bce", "Sprint 8 · sweat score 9040"],
   ["6a998daf8d2b6d09c6e334d2", "Target watts · 2 × 20 min @ 153 W"],

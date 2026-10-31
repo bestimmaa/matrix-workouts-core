@@ -102,21 +102,22 @@ function workPlateaus(samples: readonly Sample[]): Run[] {
     const run = [smooth[i]!];
     let j = i + 1;
     let misses = 0;
-    while (j < smooth.length) {
+    // `j` advances past every sample looked at, misses included, so the run ends at
+    // `j - misses` whether the loop broke on two misses or ran out of series.
+    for (; j < smooth.length && misses < RULES.missesToBreak; j += 1) {
       const m = run[run.length >> 1]!;
       const tolerance = Math.max(RULES.minToleranceWatts, m * RULES.toleranceFraction);
       if (Math.abs(smooth[j]! - m) <= tolerance) {
         insertSorted(run, smooth[j]!);
         misses = 0;
-      } else if (++misses >= RULES.missesToBreak) {
-        break;
+      } else {
+        misses += 1;
       }
-      j += 1;
     }
     const end = j - misses;
     const span = secondsAt(samples, end) - secondsAt(samples, i);
     if (span >= RULES.minBlockSeconds) runs.push({ start: i, end, median: median(power.slice(i, end)) });
-    i = end > i + 1 ? end : i + 1;
+    i = end; // at least i + 1: a run always holds its opening sample
   }
   if (runs.length === 0) return [];
   const top = Math.max(...runs.map((r) => r.median));
@@ -152,10 +153,11 @@ function insertSorted(sorted: number[], value: number): void {
 /**
  * The blocks in a few words: "40 min steady", "2 × 20 min", "3 blocks, 36 min".
  * Blocks within 15 % of their mean length read as repeats; anything less even is
- * counted rather than described. One wording, shared by the share card and the
- * ride title, so the two never describe the same ride differently.
+ * counted rather than described. Empty for no blocks. One wording, shared by the
+ * share card and the ride title, so the two never describe the same ride differently.
  */
 export function describeBlocks(blocks: readonly PowerBlock[]): string {
+  if (blocks.length === 0) return "";
   const minutes = blocks.map((b) => b.durationSeconds / 60);
   const total = minutes.reduce((a, b) => a + b, 0);
   const meanMinutes = total / minutes.length;

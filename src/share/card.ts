@@ -1,6 +1,7 @@
 import { flagHeartRateDropouts } from "../parse/heartRate.js";
 import { describeBlocks, heldWatts, targetWattBlocks } from "../parse/blocks.js";
 import { PROGRAM_NAMES, reachedWatts } from "../parse/facts.js";
+import { SPRINT8_SPRINT_WINDOWS } from "../parse/sprint8.js";
 import { mean } from "../parse/stats.js";
 import type { Sample, Workout } from "../parse/types.js";
 
@@ -148,18 +149,15 @@ function targetWattsCard(workout: Workout, ride: Ride): Body | null {
 }
 
 /**
- * The sprint windows are placed by the protocol's fixed timing — sprint i starts at
- * 180 + 120·i seconds and lasts 30 — not detected. Sprint 8 is the one program whose
- * layout is invariant; the program level changes resistance, never timing.
+ * The sprint windows are the protocol's fixed timing (`SPRINT8_SPRINT_WINDOWS`), not
+ * detected: Sprint 8 is the one program whose layout is invariant, and the program
+ * level changes resistance, never timing.
  */
-const SPRINT_STARTS = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => 180 + i * 120);
-const SPRINT_SECONDS = 30;
-
 function sprint8Card(workout: Workout, ride: Ride): Body | null {
   if (!workout.sprint8) return null;
   const inSprint = (i: number): boolean => {
     const t = ride.samples[i]!.elapsedSeconds;
-    return SPRINT_STARTS.some((s) => t >= s && t < s + SPRINT_SECONDS);
+    return SPRINT8_SPRINT_WINDOWS.some((w) => t >= w.startSeconds && t < w.endSeconds);
   };
   return {
     line: "Sweat score",

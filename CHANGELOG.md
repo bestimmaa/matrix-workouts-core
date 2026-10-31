@@ -13,6 +13,8 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   mean and max power and cadence per phase. The windows come from the console's
   fixed protocol; a ride cut short, or one whose windows show no resistance spike,
   gets `null` rather than invented sprints.
+- `SPRINT8_SPRINT_WINDOWS`: the eight sprint windows on the protocol clock, the one
+  copy of the timing that `sprint8Segments` and the share card both read.
 
 ### Fixed
 
@@ -23,6 +25,11 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
   on a transport error and its error messages on a non-ok status.
 - With `--split`, a failed file write was swallowed by the `catch` meant for
   unreadable records.
+- `targetWattBlocks` ended every block one sample early: the two off-plateau
+  samples that close a block were counted from the wrong index, so each block lost
+  its last 10 s and the next plateau opened on a sample still on the previous one.
+  The 4 × 4 ride's headline read 201 W; it now reads the log's 200 W.
+- `describeBlocks([])` returned `"0 × NaN min"`. It now returns an empty string.
 
 ## [0.4.0] - 2026-10-28
 
