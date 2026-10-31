@@ -43,6 +43,9 @@ const API_SHAPED = "6a998daf8d2b6d09c6e334d2";
 // 21 Sep, program 38, which the console calls Fitness Test (Ramp Test). Captured
 // from the API like API_SHAPED, so snake_case and not in persist-root.json.
 const RAMP_TEST = "6ab15f0afd6f5afe80369797";
+// 28 Oct, program 8, which the rider read off the console as Hills. The only
+// program-8 ride in the account; captured from the API, so snake_case.
+const HILLS = "6ae23c32fd6f5afe80ac7a79";
 // The same 12 Aug ride as PROGRAM_20, and the id the site's own link for it carries.
 // Read live from the API on 12 Sep 2026: `workout_id` and `id` are DIFFERENT values
 // on every ride that account recorded before 13 Aug 2026 — 25 of its 45 — and it is
@@ -213,6 +216,13 @@ it("names the modes confirmed against the rider's training log", () => {
   // on the fixture and not only on the id.
   it("names Virtual Active, confirmed off the console", () => {
     expect(programMode(47)).toBe("virtual_active");
+  });
+
+  it("names Hills, confirmed off the console", () => {
+    expect(programMode(8)).toBe("hills");
+    const hills = toWorkout(JSON.parse(fixture(`raw-${HILLS}.json`)) as Record<string, unknown>);
+    expect(hills.mode).toBe("hills");
+    expect(hills.programType).toBe(8);
   });
 
   it("does not guess at the ids nothing confirms", () => {

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+### Added
+
+- **Program 8 is `"hills"`**, the console's Hills program, confirmed by the rider
+  off the console. `ProgramMode` gains the value, so an exhaustive `switch` or
+  `Record<ProgramMode, …>` in a consumer needs a case for it. The title reads
+  "Hills · 12 min", and the share card draws the climbs as the strip under the
+  power grid, the way Virtual Active draws its terrain.
+
 ## [0.5.0] - 2026-10-31
 
 ### Added

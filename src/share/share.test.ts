@@ -28,6 +28,7 @@ const CASES = [
   ["6aa194a08d2b6d09c61e9500", "Target heart rate", "Average over 52 min", "142bpm"],
   ["6ab15f0afd6f5afe80369797", "Fitness test", "Reached in 18 min", "315W"],
   ["6aa67d338d2b6d09c6412d7b", "Virtual Active", "40 min virtual route", "20.4km"],
+  ["6ae23c32fd6f5afe80ac7a79", "Hills", "12 min of hills", "96W"], // no mockup: ridden after them
   ["6a9413328d2b6d09c6b512a9", null, "10 min ride", "132W"],
 ] as const;
 

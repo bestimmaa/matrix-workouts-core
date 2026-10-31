@@ -106,6 +106,8 @@ function orderKey(workout: Workout, control: ControlSignature): { key: keyof typ
   // finding. It is named here only so the caption stops claiming the mode is
   // unidentified, which it no longer is.
   if (workout.mode === "virtual_active") return { key: "default", reason: "Virtual Active — the route's terrain drove resistance" };
+  // Hills is the same shape of ride with a console profile in place of a route.
+  if (workout.mode === "hills") return { key: "default", reason: "Hills — the console's hill profile drove resistance" };
   return { key: "default", reason: "no console mode identified — showing the default order" };
 }
 

@@ -121,6 +121,8 @@ function programCard(workout: Workout, ride: Ride): Body | null {
       return fitnessTestCard(ride);
     case "virtual_active":
       return virtualActiveCard(ride);
+    case "hills":
+      return hillsCard(ride);
     case "unknown":
       return null;
   }
@@ -203,14 +205,26 @@ function fitnessTestCard(ride: Ride): Body | null {
 
 /** The route's terrain drives resistance, so resistance is drawn as the route's profile. */
 function virtualActiveCard(ride: Ride): Body {
-  const top = Math.max(...ride.samples.map((s) => s.resistanceLevel), 1);
   return {
     line: `${ride.minutes} min virtual route`,
     hero: `${ride.km}km`,
     grid: bars(ride, powerOf, ride.topWatts, () => true),
     gridLabels: [],
-    strip: { label: "Terrain", note: "", chart: bars(ride, (s) => s.resistanceLevel, top, () => false) },
+    strip: { label: "Terrain", note: "", chart: terrain(ride) },
     stats: pickStats(ride, ["time", "avgW", "avgBpm", "kcal", "km"]),
+  };
+}
+
+/**
+ * The plain card with the hills drawn in place of heart rate: the console's profile
+ * drives resistance. The record names neither the profile nor its level, so the
+ * number stays the rider's own output.
+ */
+function hillsCard(ride: Ride): Body {
+  return {
+    ...plainCard(ride),
+    line: `${ride.minutes} min of hills`,
+    strip: { label: "Resistance", note: "", chart: terrain(ride) },
   };
 }
 
@@ -293,6 +307,12 @@ function bars(ride: Ride, value: (s: Sample) => number, top: number, isFull: (in
       tone: isFull(c) ? "full" : "half",
     })),
   };
+}
+
+/** Resistance level per column, against the ride's own highest level. */
+function terrain(ride: Ride): ShareChart {
+  const top = Math.max(...ride.samples.map((s) => s.resistanceLevel), 1);
+  return bars(ride, (s) => s.resistanceLevel, top, () => false);
 }
 
 /**

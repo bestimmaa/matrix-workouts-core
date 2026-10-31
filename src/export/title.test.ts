@@ -33,6 +33,7 @@ const TITLES: [id: string, title: string][] = [
   ["6aa67d338d2b6d09c6412d7b", "Virtual Active · 20.4 km"],
   ["6ab15f0afd6f5afe80369797", "Fitness test · reached 315 W"],
   ["6adca6d1680a5afcc2ab4f3a", "Target watts · 40 min steady @ 135 W"],
+  ["6ae23c32fd6f5afe80ac7a79", "Hills · 12 min"],
 ];
 
 describe("workoutTitle", () => {

@@ -25,6 +25,8 @@ const SPRINT_8_NO_LEVEL = "6aa2d8a88d2b6d09c62953f0";
 // 13 Sep: 40 min of Virtual Active, the longest program 47 and the one the
 // rider confirmed off the console.
 const VIRTUAL_ACTIVE = "6aa67d338d2b6d09c6412d7b";
+// 28 Oct, program 8: the console's Hills program, and the only ride of it.
+const HILLS = "6ae23c32fd6f5afe80ac7a79";
 
 describe("linearScale", () => {
   it("maps domain onto range and back", () => {
@@ -180,6 +182,12 @@ describe("planWorkout", () => {
     expect(plan.headlineReason).toMatch(/Virtual Active/);
     expect(plan.headlineReason).not.toMatch(/no console mode/);
     // It still takes the default order — naming the mode changed the caption only.
+    expect(plan.headline).toBe("power");
+  });
+
+  it("says the hill profile drove the resistance on a Hills ride", () => {
+    const plan = planWorkout(fixture(HILLS));
+    expect(plan.headlineReason).toMatch(/^Hills/);
     expect(plan.headline).toBe("power");
   });
 
