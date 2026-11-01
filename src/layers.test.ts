@@ -112,6 +112,19 @@ const LAYERS: Layer[] = [
   },
   {
     /*
+     * Cross-ride analysis: a history in, best efforts and records out. Promoted from
+     * the MCP server once the extension wanted the same numbers — two consumers
+     * computing a power curve two ways would disagree about a rider's records. Pure
+     * functions over parsed workouts, so like `charts/` it names no platform.
+     */
+    name: "analysis",
+    dirs: ["analysis"],
+    mayUse: [],
+    mayImport: ["core", "analysis"],
+    mayTakeDependencies: false,
+  },
+  {
+    /*
      * The one place the platform-free promise is cashed in: real `fetch`, real files,
      * `.env`. Consumers that want it ask for it by name — `matrix-workouts-core/node`
      * — so a browser bundle importing the root entry can never pull `node:fs` in
