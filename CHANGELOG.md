@@ -22,7 +22,8 @@ The version history source of truth is git tags in the format `vMAJOR.MINOR.PATC
 - A window that is not a positive multiple of 10 s throws a `RangeError` instead of
   being silently rounded down. The MCP tool's schema already enforced this.
 - Records are ranked on displayed (rounded) watts, and a tie goes to the earliest
-  ride, regardless of input order. `beats` exposes the rule.
+  ride, regardless of input order. `shownWatts` (the rounding), `beats` (the
+  ranking) and `bestAmong` (the record among rides for one window) expose the rule.
 
 ## [0.6.0] - 2026-10-31
 

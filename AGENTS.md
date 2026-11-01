@@ -707,7 +707,8 @@ Rules the port fixed and that must not drift back:
   it that way. The last sample is dropped even when it was a full 10 s: a `Sample`
   does not carry its length, and the record's `duration` does not reveal it. The
   cost is a ride exactly one window long falling one sample short of it.
-- **Efforts are memoized per `Workout` object** (a `WeakMap` in `powerCurve.ts`).
+- **Efforts and a ride's runs of full samples are memoized per `Workout` object**
+  (`WeakMap`s in `powerCurve.ts`).
   A records view asks for the same ride's efforts several times. This relies on a
   parsed `Workout` never being mutated.
 - **A window is a whole number of samples**, or it is a `RangeError`. A 45 s best
@@ -716,9 +717,10 @@ Rules the port fixed and that must not drift back:
   effort for it, and a UI should say so rather than draw a zero.
 - **Records are ranked on displayed (rounded) watts, and ties go to the earliest
   ride.** A record is something earned on a date, and a 0.4 W edge nobody can see is
-  not a new one. `beats` is the one place this rule lives; `powerCurve`,
-  `personalRecords` and `rideRecords` all go through it, so no two views can name
-  different holders for the same record. The UI never reads "new best: 212 W" over a
+  not a new one. `shownWatts` is the rounding and `beats` the ranking, and
+  `powerCurve`, `personalRecords` and `rideRecords` all pick through `bestAmong`,
+  which uses them, so no two views can name different holders for the same record.
+  A consumer that shows a gap or compares to a number should use `shownWatts` too. The UI never reads "new best: 212 W" over a
   previous 212 W.
 - **`first` is not `record`.** The first ride long enough to cover a window
   has done something new, but it has beaten nothing.

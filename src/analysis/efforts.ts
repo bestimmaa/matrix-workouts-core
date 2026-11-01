@@ -1,5 +1,5 @@
 import type { Workout } from "../parse/types.js";
-import { DEFAULT_WINDOWS_SECONDS, assertWindow, beats, bestEffort, type PowerCurvePoint } from "./powerCurve.js";
+import { DEFAULT_WINDOWS_SECONDS, assertWindow, beats, bestAmong, bestEffort, type PowerCurvePoint } from "./powerCurve.js";
 
 /**
  * Personal records, read two ways: what a rider has ever held, and what they hold
@@ -38,18 +38,12 @@ export function personalRecords(workouts: readonly Workout[], options: PersonalR
   const windows = options.windowsSeconds ?? DEFAULT_WINDOWS_SECONDS;
   windows.forEach(assertWindow);
   const since = options.recentSince.getTime();
-
-  return windows.map((windowSeconds) => {
-    let allTime: PowerCurvePoint | null = null;
-    let recent: PowerCurvePoint | null = null;
-    for (const workout of workouts) {
-      const effort = bestEffort(workout, windowSeconds);
-      if (!effort) continue;
-      if (!allTime || beats(effort, allTime)) allTime = effort;
-      if (workout.startedAt.getTime() >= since && (!recent || beats(effort, recent))) recent = effort;
-    }
-    return { windowSeconds, allTime, recent };
-  });
+  const recentRides = workouts.filter((workout) => workout.startedAt.getTime() >= since);
+  return windows.map((windowSeconds) => ({
+    windowSeconds,
+    allTime: bestAmong(workouts, windowSeconds),
+    recent: bestAmong(recentRides, windowSeconds),
+  }));
 }
 
 /**
@@ -94,11 +88,7 @@ export function rideRecords(
   const earlier = history.filter((ride) => ride.id !== workout.id && ride.startedAt.getTime() < start);
 
   return windowsSeconds.map((windowSeconds) => {
-    let previous: PowerCurvePoint | null = null;
-    for (const ride of earlier) {
-      const found = bestEffort(ride, windowSeconds);
-      if (found && (!previous || beats(found, previous))) previous = found;
-    }
+    const previous = bestAmong(earlier, windowSeconds);
     const effort = bestEffort(workout, windowSeconds);
     let outcome: RideOutcome;
     if (!effort) outcome = "not-covered";

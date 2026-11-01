@@ -98,6 +98,8 @@ function fullRuns(samples: readonly Sample[]): Sample[][] {
  * mutated after it is parsed, which nothing in this package does.
  */
 const computed = new WeakMap<Workout, Map<number, PowerCurvePoint | null>>();
+/** The same, for a ride's runs of full samples: one split however many windows ask. */
+const runsOf = new WeakMap<Workout, Sample[][]>();
 
 /**
  * The best effort one ride holds for one window, or `null` when the ride has no
@@ -112,22 +114,19 @@ export function bestEffort(workout: Workout, windowSeconds: number): PowerCurveP
   return byWindow.get(windowSeconds)!;
 }
 
+/** A sliding sum over each run of full samples; the highest one is the effort. */
 function scan(workout: Workout, windowSeconds: number): PowerCurvePoint | null {
   const width = windowSeconds / SAMPLE_INTERVAL_SECONDS;
+  let runs = runsOf.get(workout);
+  if (!runs) runsOf.set(workout, (runs = fullRuns(workout.samples)));
 
   let best = 0;
   let bestAt = 0;
-  for (const run of fullRuns(workout.samples)) {
-    if (run.length < width) continue;
+  for (const run of runs) {
     let sum = 0;
-    for (let i = 0; i < width; i += 1) sum += run[i]!.powerWatts;
-    if (sum > best) {
-      best = sum;
-      bestAt = run[0]!.elapsedSeconds;
-    }
-    for (let i = width; i < run.length; i += 1) {
-      sum += run[i]!.powerWatts - run[i - width]!.powerWatts;
-      if (sum > best) {
+    for (let i = 0; i < run.length; i += 1) {
+      sum += run[i]!.powerWatts - (i >= width ? run[i - width]!.powerWatts : 0);
+      if (i >= width - 1 && sum > best) {
         best = sum;
         bestAt = run[i - width + 1]!.elapsedSeconds;
       }
@@ -148,13 +147,31 @@ function scan(workout: Workout, windowSeconds: number): PowerCurvePoint | null {
 }
 
 /**
+ * An effort's watts as shown: whole watts. Records compare on this figure, so every
+ * comparison, gap and label should go through it rather than round on its own.
+ */
+export function shownWatts(point: PowerCurvePoint): number {
+  return Math.round(point.watts);
+}
+
+/**
  * Whether `a` beats `b` as a record: more displayed watts, or the same displayed
- * watts on an earlier ride. The one place the rounding rule lives.
+ * watts on an earlier ride.
  */
 export function beats(a: PowerCurvePoint, b: PowerCurvePoint): boolean {
-  const [shownA, shownB] = [Math.round(a.watts), Math.round(b.watts)];
+  const [shownA, shownB] = [shownWatts(a), shownWatts(b)];
   if (shownA !== shownB) return shownA > shownB;
   return a.startedAt.getTime() < b.startedAt.getTime();
+}
+
+/** The record among `rides` for one window: the effort that `beats` every other. */
+export function bestAmong(rides: readonly Workout[], windowSeconds: number): PowerCurvePoint | null {
+  let best: PowerCurvePoint | null = null;
+  for (const ride of rides) {
+    const effort = bestEffort(ride, windowSeconds);
+    if (effort && (!best || beats(effort, best))) best = effort;
+  }
+  return best;
 }
 
 /**
@@ -167,14 +184,7 @@ export function powerCurve(
   windowsSeconds: readonly number[] = DEFAULT_WINDOWS_SECONDS,
 ): PowerCurvePoint[] {
   windowsSeconds.forEach(assertWindow);
-  const curve: PowerCurvePoint[] = [];
-  for (const windowSeconds of windowsSeconds) {
-    let best: PowerCurvePoint | null = null;
-    for (const workout of workouts) {
-      const found = bestEffort(workout, windowSeconds);
-      if (found && (!best || beats(found, best))) best = found;
-    }
-    if (best) curve.push(best);
-  }
-  return curve;
+  return windowsSeconds
+    .map((windowSeconds) => bestAmong(workouts, windowSeconds))
+    .filter((point): point is PowerCurvePoint => point !== null);
 }
