@@ -15,3 +15,4 @@ export * from "./api/index.js";
 export * from "./export/index.js";
 export * from "./charts/index.js";
 export * from "./share/index.js";
+export * from "./analysis/index.js";

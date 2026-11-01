@@ -78,6 +78,8 @@ src/
     charts/      chart geometry (data + scale -> path strings, ticks)
   share — the same, one step further along
     share/       what a shareable image says, and the SVG string it becomes
+  analysis — cross-ride numbers over a parsed history, no platform either
+    analysis/    best efforts per duration, the power curve, personal records
   node — where the platform-free promise is cashed in
     node/        real fetch, real files, .env, and the history CLI
 ```
@@ -679,6 +681,51 @@ encoder is hand-written because the package takes no runtime dependencies.
   and `fitFilename` carries the workout id, so the upload is named by its start
   time instead. A test checks every fixture for this. The HTTP request, the OAuth
   sign-in and the status polling belong to the consumer that makes them.
+
+---
+
+## Cross-ride analysis
+
+`analysis/` takes a history the caller already holds and returns best efforts:
+`bestEffort` for one ride and one window, `powerCurve` across rides,
+`personalRecords` for all-time against recent, and `rideRecords` for what one ride
+did against the rides before it. It came from `matrix-workouts-mcp`'s
+`src/analysis/` once the extension wanted the same numbers for the records view in the
+[gamification notes](https://app.notion.com/p/39552e0a892e4826ba842765094e29f5).
+That repo's AGENTS.md set this as the trigger for moving it, and it has happened.
+Two consumers computing a power curve two ways would disagree about a rider's
+records.
+
+**Experimental.** The API is a first cut for the extension's records view and may
+change before a consumer ships on it.
+
+Rules the port fixed and that must not drift back:
+
+- **A window spans only full samples.** A sample counts only when the next one starts
+  exactly 10 s later, so the console's partial final sample (usually 0 s, see
+  "Data-quality gotchas") is never read as 10 s of power. The MCP original did read
+  it that way.
+- **A window is a whole number of samples**, or it is a `RangeError`. A 45 s best
+  from 10 s samples would be a 40 s best with the wrong label.
+- **`null` means "not recorded", never 0 W.** A ride shorter than a window has no
+  effort for it, and a UI should say so rather than draw a zero.
+- **Ties go to the earliest ride**, because a record is something earned on a date.
+- **A record must win by a displayed watt.** `rideRecords` compares rounded watts,
+  so the UI never reads "new best: 212 W" over a previous 212 W.
+- **`first` is not `record`.** The first ride long enough to cover a window
+  has done something new, but it has beaten nothing.
+- **No population benchmarks, scores or levels.** Every number is the rider's own.
+  Strava's Power Skills inspired the feature, but its benchmark tables are
+  unpublished, and inventing some would present a guess as a measurement.
+- **The caller decides comparability.** Console watts are not known to be
+  comparable across machines; each effort carries `machineType` and `machineId`, and
+  filtering the history (by machine, or to drop a suspect ride) happens before the call.
+- **Nothing here reads the clock.** "Recent" is an explicit `recentSince` date, so
+  the output depends only on the arguments.
+
+Durations under 30 s are coarse: a 10 s best is one sample. Whether a sample's
+`power` is an instantaneous reading or the console's own 10 s mean is not
+established. Do not present short bests as sprint peaks.
 
 ---
 

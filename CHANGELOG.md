@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+### Added
+
+- **Cross-ride analysis, `analysis/` (experimental).** `bestEffort`, `powerCurve`
+  and `DEFAULT_WINDOWS_SECONDS` are ported from `matrix-workouts-mcp`, and two
+  functions are new: `personalRecords` (all-time and recent best per duration) and
+  `rideRecords` (each duration's outcome for one ride against earlier rides:
+  `first`, `record`, `below-record` or `not-covered`). Each effort names its ride,
+  its machine and where in the ride it starts.
+
+### Changed from the MCP original
+
+- A window no longer includes the console's partial final sample, which the
+  original counted as a full 10 s.
+- A window that is not a positive multiple of 10 s throws a `RangeError` instead of
+  being silently rounded down. The MCP tool's schema already enforced this.
+- Ties go to the earliest ride, regardless of input order.
+
 ## [0.6.0] - 2026-10-31
 
 ### Added

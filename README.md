@@ -72,7 +72,7 @@ wins. Used for one sign-in request, never written to the output and never printe
 
 | Entry point | Holds |
 |---|---|
-| `matrix-workouts-core` | `toWorkout`, `loadCachedWorkouts`, `findWorkout`, `heartRateStats`, `flagHeartRateDropouts`, `controlSignature`, `programMode`, `targetWattBlocks`, `sprint8Segments`, `shareCard`, `renderShareCardSvg`, `fetchWorkoutHistory`, `loginWithXid`, `readCredentials`, `workoutExport`, `workoutTcx`, `workoutFit`, `workoutTitle`, `stravaUpload`, and the `Workout` / `Sample` types |
+| `matrix-workouts-core` | `toWorkout`, `loadCachedWorkouts`, `findWorkout`, `heartRateStats`, `flagHeartRateDropouts`, `controlSignature`, `programMode`, `targetWattBlocks`, `sprint8Segments`, `shareCard`, `renderShareCardSvg`, `fetchWorkoutHistory`, `loginWithXid`, `readCredentials`, `workoutExport`, `workoutTcx`, `workoutFit`, `workoutTitle`, `stravaUpload`, `bestEffort`, `powerCurve`, `personalRecords`, `rideRecords`, and the `Workout` / `Sample` types |
 | `matrix-workouts-core/node` | `httpFetch`, `downloadHistory`, `readRawHistoryFile`, `loadEnvFile` — real fetch, real files |
 
 Units are in the names (`powerWatts`, `cadenceRpm`, `distanceMeters`), because the
@@ -84,6 +84,14 @@ export is lossless even where this model has no name for a field.
 big number per console program — and `renderShareCardSvg(card, { format: "story" })`
 lays it out as an SVG string, 1080 × 1920 or 1080 × 1350 (`"feed"`). Drawing it is
 yours: it names Doto and Instrument Sans and does not carry them.
+
+`powerCurve(workouts)` gives the best mean power across a history for each
+duration, from 10 s to an hour, and names the ride each one came from.
+`personalRecords(workouts, { recentSince })` gives each duration's all-time best
+next to its recent best. `rideRecords(workout, history)` says, for each duration,
+whether one ride set a first effort, a new record, or neither against the rides
+before it. Windows are whole 10 s samples and never include the console's partial
+final sample. *Experimental:* this API may change before 1.0.
 
 [MATRIX_API.md](MATRIX_API.md) documents the upstream API: endpoints, wire shapes,
 units, and which parts are verified rather than read out of the site's bundle.
