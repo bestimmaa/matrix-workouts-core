@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+### Added
+
+- **Power-skills star geometry, `charts/star.ts`.** `starChart` turns one value per
+  duration into a percentage of that spoke's reference and returns points, rings
+  and closed paths centred on (0, 0). A floor percentage maps to the centre, values
+  past `maxPercent` are clamped and flagged `past`, and a spoke with no value is
+  left out of the shape instead of drawn at zero.
+- **A power ceiling, `analysis/ceiling.ts` (experimental).** `ceilingWatts` and
+  `ceilingWattsPerKg` give 90 % of the Allen and Coggan world-class W/kg for men or
+  women, interpolated in log-duration between 5 s, 1 min, 5 min and 60 min, and
+  throw outside that range. It is a target, not a measurement.
+- **`readRider`** reads weight (in kg) and sex from the site's stored profile and
+  nothing else. A field that is missing or reads ambiguously comes back `null`.
+
 ## [0.7.0] - 2026-11-01
 
 ### Added

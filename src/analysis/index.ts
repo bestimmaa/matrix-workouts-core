@@ -19,3 +19,11 @@ export {
   type RideRecord,
   type WindowRecord,
 } from "./efforts.js";
+export {
+  CEILING_FRACTION,
+  WORLD_CLASS_WATTS_PER_KG,
+  ceilingWatts,
+  ceilingWattsPerKg,
+  type Rider,
+  type RiderSex,
+} from "./ceiling.js";

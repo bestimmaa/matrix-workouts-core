@@ -79,8 +79,12 @@ first_name  last_name  email  units  gender  height  weight
 birthday  age  pictureUrl  aliases  identities  id  token
 ```
 
-Only two fields matter: **`id`** is the exerciser id for the workouts path, and
-**`token`** is the bearer token. `src/api/login.ts` deliberately returns only those
+Only two fields matter for fetching: **`id`** is the exerciser id for the workouts
+path, and **`token`** is the bearer token. The site stores this object as
+`userStore.exerciserProfile`, and `readRider` (`src/api/rider.ts`) reads `weight`,
+`units` and `gender` from it for the power ceiling. **Their encodings are
+unverified**: `readRider` accepts `units` starting `metric` or `imperial`/`english`
+and `gender` of `m`/`male`/`f`/`female`, and answers `null` for anything else. `src/api/login.ts` deliberately returns only those
 two — the rest is PII that no later call needs.
 
 A wrong xid or passcode answers `401`.
