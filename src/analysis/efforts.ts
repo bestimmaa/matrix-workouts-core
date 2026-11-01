@@ -103,7 +103,7 @@ export function rideRecords(
     let outcome: RideOutcome;
     if (!effort) outcome = "not-covered";
     else if (!previous) outcome = "first";
-    else if (Math.round(effort.watts) > Math.round(previous.watts)) outcome = "record";
+    else if (beats(effort, previous)) outcome = "record";
     else outcome = "below-record";
     return { windowSeconds, outcome, effort, previous };
   });

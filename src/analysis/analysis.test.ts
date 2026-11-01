@@ -108,6 +108,21 @@ describe("powerCurve", () => {
     expect(powerCurve([early, late], [20])[0]?.workoutId).toBe("early");
   });
 
+  it("calls a fraction of a watt a tie: the earlier ride keeps a record it only matches on screen", () => {
+    const early = ride("early", "2026-09-01", [260, 260]);
+    const late = ride("late", "2026-09-08", [260.4, 260.4]);
+    expect(powerCurve([early, late], [20])[0]?.workoutId).toBe("early");
+    const [twenty] = personalRecords([early, late], { windowsSeconds: [20], recentSince: new Date(0) });
+    expect(twenty?.allTime?.workoutId).toBe("early");
+    // And rideRecords agrees: the later ride is below the record, not a new one.
+    expect(rideRecords(late, [early, late], [20])[0]?.outcome).toBe("below-record");
+  });
+
+  it("returns the same effort object when asked again, without rescanning", () => {
+    const workout = ride("a", "2026-09-01", [100, 200, 300]);
+    expect(bestEffort(workout, 20)).toBe(bestEffort(workout, 20));
+  });
+
   it("uses only windows that are whole samples by default", () => {
     expect(DEFAULT_WINDOWS_SECONDS.every((seconds) => seconds % 10 === 0)).toBe(true);
     expect(() => powerCurve([], [10, 45])).toThrow(RangeError);

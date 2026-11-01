@@ -704,14 +704,22 @@ Rules the port fixed and that must not drift back:
 - **A window spans only full samples.** A sample counts only when the next one starts
   exactly 10 s later, so the console's partial final sample (usually 0 s, see
   "Data-quality gotchas") is never read as 10 s of power. The MCP original did read
-  it that way.
+  it that way. The last sample is dropped even when it was a full 10 s: a `Sample`
+  does not carry its length, and the record's `duration` does not reveal it. The
+  cost is a ride exactly one window long falling one sample short of it.
+- **Efforts are memoized per `Workout` object** (a `WeakMap` in `powerCurve.ts`).
+  A records view asks for the same ride's efforts several times. This relies on a
+  parsed `Workout` never being mutated.
 - **A window is a whole number of samples**, or it is a `RangeError`. A 45 s best
   from 10 s samples would be a 40 s best with the wrong label.
 - **`null` means "not recorded", never 0 W.** A ride shorter than a window has no
   effort for it, and a UI should say so rather than draw a zero.
-- **Ties go to the earliest ride**, because a record is something earned on a date.
-- **A record must win by a displayed watt.** `rideRecords` compares rounded watts,
-  so the UI never reads "new best: 212 W" over a previous 212 W.
+- **Records are ranked on displayed (rounded) watts, and ties go to the earliest
+  ride.** A record is something earned on a date, and a 0.4 W edge nobody can see is
+  not a new one. `beats` is the one place this rule lives; `powerCurve`,
+  `personalRecords` and `rideRecords` all go through it, so no two views can name
+  different holders for the same record. The UI never reads "new best: 212 W" over a
+  previous 212 W.
 - **`first` is not `record`.** The first ride long enough to cover a window
   has done something new, but it has beaten nothing.
 - **No population benchmarks, scores or levels.** Every number is the rider's own.

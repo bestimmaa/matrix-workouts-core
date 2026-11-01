@@ -19,8 +19,16 @@ import type { MachineType, Sample, Workout } from "../parse/types.js";
  *   40 s and still labelled it 45. Here a window that is not a positive multiple of
  *   the sample interval is a `RangeError`: the caller asked a question this data
  *   cannot answer, and saying so beats answering a different one.
- * - **Ties go to the earliest ride.** A best effort is something a rider *earned* on a
- *   date. When a later ride only matches it, the record still belongs to the first.
+ * - **Ties go to the earliest ride, and a tie is the same displayed watt.** A best
+ *   effort is something a rider *earned* on a date. A later ride that only matches it
+ *   (260.4 W against 260.0 W both read "260 W") leaves the record with the first. Ranking
+ *   on the unrounded mean instead would hand it to a ride nobody could see was better,
+ *   and `rideRecords` would call that same ride "below-record".
+ *
+ * The last sample is always left out, even in the rare case it was a full 10 s: a
+ * sample does not carry its own length, and the record's `duration` does not reveal
+ * it either (on the 20 Jul ramp test a 1 s final sample starts 22 s before it). So a
+ * ride exactly one window long can fall one sample short of covering that window.
  *
  * The console samples every 10 s, so 10 s is the finest resolution any of this can
  * claim, and a "10 s best" is one sample's reading, not an average of anything.
@@ -83,12 +91,28 @@ function fullRuns(samples: readonly Sample[]): Sample[][] {
 }
 
 /**
+ * Efforts already computed, per ride and window. A records view asks for the same
+ * ride's efforts many times over (records, recent form, milestones, targets), and
+ * each ask is a scan of every sample. Keyed weakly on the `Workout` object, so a
+ * history that is dropped takes its entries with it. This assumes a `Workout` is not
+ * mutated after it is parsed, which nothing in this package does.
+ */
+const computed = new WeakMap<Workout, Map<number, PowerCurvePoint | null>>();
+
+/**
  * The best effort one ride holds for one window, or `null` when the ride has no
  * stretch of full samples that long — or held nothing above 0 W across it. `null`
  * means "not recorded", never "zero ability".
  */
 export function bestEffort(workout: Workout, windowSeconds: number): PowerCurvePoint | null {
   assertWindow(windowSeconds);
+  let byWindow = computed.get(workout);
+  if (!byWindow) computed.set(workout, (byWindow = new Map()));
+  if (!byWindow.has(windowSeconds)) byWindow.set(windowSeconds, scan(workout, windowSeconds));
+  return byWindow.get(windowSeconds)!;
+}
+
+function scan(workout: Workout, windowSeconds: number): PowerCurvePoint | null {
   const width = windowSeconds / SAMPLE_INTERVAL_SECONDS;
 
   let best = 0;
@@ -123,9 +147,13 @@ export function bestEffort(workout: Workout, windowSeconds: number): PowerCurveP
   };
 }
 
-/** Whether `a` beats `b` as a record: more watts, or the same watts earlier. */
+/**
+ * Whether `a` beats `b` as a record: more displayed watts, or the same displayed
+ * watts on an earlier ride. The one place the rounding rule lives.
+ */
 export function beats(a: PowerCurvePoint, b: PowerCurvePoint): boolean {
-  if (a.watts !== b.watts) return a.watts > b.watts;
+  const [shownA, shownB] = [Math.round(a.watts), Math.round(b.watts)];
+  if (shownA !== shownB) return shownA > shownB;
   return a.startedAt.getTime() < b.startedAt.getTime();
 }
 
