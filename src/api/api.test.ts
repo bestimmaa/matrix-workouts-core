@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ApiError, fetchWorkoutHistory, workoutsUrl, type FetchInit, type FetchLike } from "./client.js";
 import { loginWithXid } from "./login.js";
 import { readCredentials, redact } from "./credentials.js";
+import { readRider } from "./rider.js";
 import { WorkoutParseError } from "../parse/types.js";
 import { findWorkout } from "../parse/index.js";
 
@@ -300,5 +301,37 @@ describe("loginWithXid", () => {
   it("names the status when the API is failing", async () => {
     const { impl } = capturing({}, 503);
     await expect(loginWithXid({ xid: "4200000", pin: PIN }, impl)).rejects.toThrow(/503/);
+  });
+});
+
+describe("readRider", () => {
+  const profile = (fields: Record<string, unknown>) =>
+    storage({ userStore: JSON.stringify({ exerciserProfile: { token: TOKEN, email: "rider@example.com", ...fields } }) });
+
+  it("reads weight and sex, and nothing else", () => {
+    const rider = readRider(profile({ weight: 80, units: "metric", gender: "male" }));
+    expect(rider).toEqual({ weightKg: 80, sex: "male" });
+    expect(JSON.stringify(rider)).not.toContain(TOKEN);
+  });
+
+  it("converts an imperial weight", () => {
+    expect(readRider(profile({ weight: "176", units: "imperial", gender: "F" })).weightKg).toBeCloseTo(79.83, 2);
+  });
+
+  it("does not guess a weight whose units it cannot read", () => {
+    expect(readRider(profile({ weight: 80 })).weightKg).toBeNull();
+    expect(readRider(profile({ weight: 80, units: "stone" })).weightKg).toBeNull();
+    expect(readRider(profile({ weight: 0, units: "metric" })).weightKg).toBeNull();
+  });
+
+  it("reads only an unambiguous sex", () => {
+    expect(readRider(profile({ gender: "Female" })).sex).toBe("female");
+    expect(readRider(profile({ gender: "other" })).sex).toBeNull();
+    expect(readRider(profile({ gender: 1 })).sex).toBeNull();
+  });
+
+  it("answers nulls, not an error, without a profile", () => {
+    expect(readRider(storage(null))).toEqual({ weightKg: null, sex: null });
+    expect(readRider(storage({ userStore: "{}" }))).toEqual({ weightKg: null, sex: null });
   });
 });

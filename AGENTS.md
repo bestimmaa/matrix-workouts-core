@@ -724,9 +724,17 @@ Rules the port fixed and that must not drift back:
   previous 212 W.
 - **`first` is not `record`.** The first ride long enough to cover a window
   has done something new, but it has beaten nothing.
-- **No population benchmarks, scores or levels.** Every number is the rider's own.
-  Strava's Power Skills inspired the feature, but its benchmark tables are
-  unpublished, and inventing some would present a guess as a measurement.
+- **Records are the rider's own; the one outside number is a labelled ceiling.**
+  No scores, no levels, and no record is ever judged against anyone else. Strava's
+  Power Skills inspired the feature, but its benchmark tables are unpublished, and
+  inventing some would present a guess as a measurement. What riders asked for
+  instead (Nov 2026) is something to aim at beyond their own best, so `ceiling.ts`
+  gives one: 90 % of the published Allen and Coggan "world class" W/kg, times the
+  rider's weight. It is a target the rider chooses to show, never a rating. The
+  table is a rough rule of thumb, it has no 30 s, 10 min or 20 min value (those are
+  interpolated in log-duration), and console watts are uncalibrated, so a UI must say
+  "a ceiling, not a measurement" wherever it draws one. Past 5 s – 60 min it throws
+  rather than extrapolate.
 - **The caller decides comparability.** Console watts are not known to be
   comparable across machines; each effort carries `machineType` and `machineId`, and
   filtering the history (by machine, or to drop a suspect ride) happens before the call.
@@ -799,6 +807,9 @@ decides what it refuses to leak.
   profile — name, email, birthday, height, weight — and none of it is needed to fetch
   workouts, so none of it is carried out where a caller could print it by accident.
   Do not widen that return type.
+- `readRider` returns weight and sex — what the ceiling needs — and nothing else
+  from the same profile. It reads on demand from the browser's stored session, like
+  the token; a consumer that keeps the values keeps them on the rider's device.
 - The passcode is used for one request. It is never stored, never logged, never
   returned.
 - `downloadHistory` writes `0600`. Those files are the rider's heart rate at
