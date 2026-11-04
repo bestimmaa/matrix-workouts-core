@@ -43,6 +43,7 @@ const ALL = [
   "6a8586f58d2b6d09c6494dd6", // 19 Aug target watts, 4×4 @ 200 W, snake_case from the API
   "6adca6d1680a5afcc2ab4f3a", // 24 Oct target watts, one steady block, snake_case from the API
   "6ae23c32fd6f5afe80ac7a79", // 28 Oct Hills, the only program 8, snake_case from the API
+  "6aeb42cac5b97a306626006f", // 4 Nov Intervals, the only program 3, snake_case from the API
 ];
 
 const AT = new Date("2026-09-11T09:30:00.000Z");

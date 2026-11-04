@@ -46,6 +46,10 @@ const RAMP_TEST = "6ab15f0afd6f5afe80369797";
 // 28 Oct, program 8, which the rider read off the console as Hills. The only
 // program-8 ride in the account; captured from the API, so snake_case.
 const HILLS = "6ae23c32fd6f5afe80ac7a79";
+// 4 Nov, program 3, which is the Intervals ride the rider reported (the one unnamed ride
+// that day, so inferred, not read off the console). The only
+// program-3 ride in the account; captured from the API, so snake_case.
+const INTERVALS = "6aeb42cac5b97a306626006f";
 // The same 12 Aug ride as PROGRAM_20, and the id the site's own link for it carries.
 // Read live from the API on 12 Sep 2026: `workout_id` and `id` are DIFFERENT values
 // on every ride that account recorded before 13 Aug 2026 — 25 of its 45 — and it is
@@ -223,6 +227,13 @@ it("names the modes confirmed against the rider's training log", () => {
     const hills = toWorkout(JSON.parse(fixture(`raw-${HILLS}.json`)) as Record<string, unknown>);
     expect(hills.mode).toBe("hills");
     expect(hills.programType).toBe(8);
+  });
+
+  it("names Intervals, inferred from the rider's ride of the day", () => {
+    expect(programMode(3)).toBe("intervals");
+    const intervals = toWorkout(JSON.parse(fixture(`raw-${INTERVALS}.json`)) as Record<string, unknown>);
+    expect(intervals.mode).toBe("intervals");
+    expect(intervals.programType).toBe(3);
   });
 
   it("does not guess at the ids nothing confirms", () => {

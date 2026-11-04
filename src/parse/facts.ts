@@ -16,6 +16,7 @@ export const PROGRAM_NAMES: Readonly<Record<ProgramMode, string | null>> = {
   fitness_test: "Fitness test",
   virtual_active: "Virtual Active",
   hills: "Hills",
+  intervals: "Intervals",
   unknown: null,
 };
 

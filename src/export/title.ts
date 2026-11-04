@@ -42,6 +42,7 @@ function programFact(workout: Workout, minutes: string): string | null {
       return `${(workout.distanceMeters / 1000).toFixed(1)} km`;
     // A profile run for a set time: the minutes are the program's own figure.
     case "hills":
+    case "intervals":
     case "unknown":
       return null;
   }
