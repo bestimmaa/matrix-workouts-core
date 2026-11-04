@@ -193,7 +193,7 @@ describe("planWorkout", () => {
     expect(plan.headline).toBe("power");
   });
 
-  it("says work and recovery blocks drove the resistance on an Intervals ride", () => {
+  it("says the console program drove the resistance on an Intervals ride", () => {
     const plan = planWorkout(fixture(INTERVALS));
     expect(plan.headlineReason).toMatch(/^Intervals/);
     expect(plan.headline).toBe("power");

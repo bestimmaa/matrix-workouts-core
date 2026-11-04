@@ -230,11 +230,7 @@ function hillsCard(ride: Ride): Body {
   };
 }
 
-/**
- * The plain card, worded for the program. The power grid already shows the work
- * blocks and the heart-rate strip how the body answered them; the record carries
- * neither the console's block lengths nor its level, so the card claims neither.
- */
+/** The plain card, worded for the program; the record carries no block lengths to claim. */
 function intervalsCard(ride: Ride): Body {
   return { ...plainCard(ride), line: `${ride.minutes} min of intervals` };
 }
