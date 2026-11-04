@@ -123,6 +123,8 @@ function programCard(workout: Workout, ride: Ride): Body | null {
       return virtualActiveCard(ride);
     case "hills":
       return hillsCard(ride);
+    case "intervals":
+      return intervalsCard(ride);
     case "unknown":
       return null;
   }
@@ -226,6 +228,15 @@ function hillsCard(ride: Ride): Body {
     line: `${ride.minutes} min of hills`,
     strip: { label: "Resistance", note: "", chart: terrain(ride) },
   };
+}
+
+/**
+ * The plain card, worded for the program. The power grid already shows the work
+ * blocks and the heart-rate strip how the body answered them; the record carries
+ * neither the console's block lengths nor its level, so the card claims neither.
+ */
+function intervalsCard(ride: Ride): Body {
+  return { ...plainCard(ride), line: `${ride.minutes} min of intervals` };
 }
 
 /** Program 0, and the fallback for any program whose own number is missing. */

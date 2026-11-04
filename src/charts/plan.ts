@@ -108,6 +108,8 @@ function orderKey(workout: Workout, control: ControlSignature): { key: keyof typ
   if (workout.mode === "virtual_active") return { key: "default", reason: "Virtual Active — the route's terrain drove resistance" };
   // Hills is the same shape of ride with a console profile in place of a route.
   if (workout.mode === "hills") return { key: "default", reason: "Hills — the console's hill profile drove resistance" };
+  // Intervals alternates effort and recovery by raising and dropping resistance.
+  if (workout.mode === "intervals") return { key: "default", reason: "Intervals — the console's work and recovery blocks drove resistance" };
   return { key: "default", reason: "no console mode identified — showing the default order" };
 }
 

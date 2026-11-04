@@ -3,7 +3,7 @@
  *
  * `programType` is the numeric console program id and is the mode marker. Values
  * observed across one account's 44 workouts: 46 (27x), 18 (7x), 20 (4x), 47 (3x),
- * 0 (2x), 38 (1x); 8 first appeared on 28 Oct 2026. Only the ids the rider has
+ * 0 (2x), 38 (1x); 8 first appeared on 28 Oct 2026, 3 on 4 Nov 2026. Only the ids the rider has
  * confirmed are named here — the rest are deliberately left unmapped rather than
  * guessed at.
  */
@@ -14,6 +14,7 @@ export type ProgramMode =
   | "fitness_test"
   | "virtual_active"
   | "hills"
+  | "intervals"
   | "unknown";
 
 export const PROGRAM_MODES: Readonly<Record<number, ProgramMode>> = Object.freeze({
@@ -23,6 +24,7 @@ export const PROGRAM_MODES: Readonly<Record<number, ProgramMode>> = Object.freez
   38: "fitness_test",      // the console's "Fitness Test (Ramp Test)"; exact match in the log
   47: "virtual_active",    // confirmed by rider off the console, 13 Sep 2026 ride
   8: "hills",              // confirmed by rider off the console, 28 Oct 2026 ride
+  3: "intervals",          // confirmed by rider off the console, 4 Nov 2026 ride
 });
 
 /**

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The version history source of truth is git tags in the format `vMAJOR.MINOR.PATCH`.
 
+## [Unreleased]
+
+### Added
+
+- **Program 3 is `"intervals"`**, the console's Intervals program. `ProgramMode`
+  gains the value, so an exhaustive `switch` or `Record<ProgramMode, …>` in a
+  consumer needs a case for it. The title reads "Intervals · 18 min" and the share
+  card is the plain card worded "18 min of intervals".
+
 ## [0.8.0] - 2026-11-01
 
 ### Added
